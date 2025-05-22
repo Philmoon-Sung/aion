@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AION - AI Music & Video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a031a; 
+            color: #e0e0e0; 
+        }
+        .neon-accent { color: #8A2BE2; }
+        .neon-accent-bg { background-color: #8A2BE2; }
+        .sidebar-icon { transition: all 0.3s ease; }
+        .sidebar-icon:hover { color: #8A2BE2; transform: scale(1.1); }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .glassmorphism {
+            background: rgba(20, 10, 40, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+        .scrollable-content::-webkit-scrollbar { width: 8px; }
+        .scrollable-content::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .scrollable-content::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 10px; }
+        .scrollable-content::-webkit-scrollbar-thumb:hover { background: #701ebd; }
+        
+        /* 가로 스크롤바 스타일 (선택 사항) */
+        .horizontal-scroll::-webkit-scrollbar { height: 6px; }
+        .horizontal-scroll::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 3px;}
+
+
+        .modal.hidden { display: none; }
+        .modal-content { max-height: 80vh; }
+
+        .item-action-icon {
+            position: absolute;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.3rem; 
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.75rem; 
+            z-index: 10;
+            opacity: 0; 
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+            width: 1.75rem; 
+            height: 1.75rem; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .item-action-icon:hover { opacity: 1; transform: scale(1.15); }
+        
+        .recommend-checkbox-icon.recommended, .like-item-button.liked { 
+            color: #facc15; 
+        }
+        .subscribe-artist-icon { 
+            color: #cbd5e1; 
+            cursor: pointer;
+            transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            font-size: 0.8rem; 
+            margin-left: 0.25rem; 
+        }
+        .subscribe-artist-icon.subscribed {
+            color: #ef4444; 
+        }
+        .subscribe-artist-icon:hover {
+            transform: scale(1.2);
+        }
+        .youtube-playable:hover .item-action-icon { opacity: 0.8; }
+        .youtube-playable { position: relative; }
+
+        .toast-message {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); background-color: #8A2BE2;
+            color: white; padding: 10px 20px; border-radius: 8px;
+            z-index: 1000; opacity: 0; transition: opacity 0.5s ease-in-out;
+            font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+        }
+        .toast-message.show { opacity: 1; }
+        .item-title { font-size: 0.875rem; font-weight: 500; }
+        .item-artist, .item-tags { font-size: 0.75rem; }
+        .item-artist-wrapper { display: flex; align-items: center; } 
+
+
+        .playlist-card {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem; 
+            border-radius: 0.5rem; 
+            transition: background-color 0.2s;
+        }
+        .playlist-card:hover {
+            background-color: rgba(138, 43, 226, 0.2); 
+        }
+        .playlist-cover {
+            width: 4rem; 
+            height: 4rem; 
+            border-radius: 0.375rem; 
+            object-fit: cover;
+            margin-right: 0.75rem; 
+            background-color: rgba(138, 43, 226, 0.3); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+         .playlist-cover i {
+            font-size: 1.5rem; 
+            color: rgba(224, 224, 224, 0.7); 
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-20 md:w-64 glassmorphism p-4 space-y-8 flex flex-col items-center md:items-start fixed inset-y-0 left-0 z-30">
+        <div class="flex items-center justify-center md:justify-start space-x-2 mb-10">
+            <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
+            <h1 class="text-2xl font-bold hidden md:block">AION</h1>
+        </div>
+        <nav class="space-y-4 flex-grow w-full">
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
+                <i class="fas fa-home fa-fw text-xl sidebar-icon"></i>
+                <span class="hidden md:inline">홈</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
+                <i class="fas fa-compass fa-fw text-xl sidebar-icon"></i>
+                <span class="hidden md:inline">탐색</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
+                <i class="fas fa-book fa-fw text-xl sidebar-icon"></i>
+                <span class="hidden md:inline">보관함</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
+                <i class="fas fa-upload fa-fw text-xl sidebar-icon"></i>
+                <span class="hidden md:inline">업로드 (창작자)</span>
+            </a>
+        </nav>
+        <div class="mt-auto w-full">
+             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
+                <i class="fas fa-user-circle fa-fw text-xl sidebar-icon"></i>
+                <span class="hidden md:inline">프로필</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 ml-20 md:ml-64 h-screen flex flex-col">
+        <header class="p-4 glassmorphism sticky top-0 z-20 flex-shrink-0">
+            <div class="flex items-center justify-between">
+                <div class="relative w-full max-w-md">
+                    <input type="search" placeholder="AI 음악, 아티스트, 프롬프트 검색..." class="w-full p-3 pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-full hover:bg-purple-700/30">
+                        <i class="fas fa-bell text-xl"></i>
+                    </button>
+                    <img src="https://placehold.co/40x40/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer">
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow p-6 overflow-y-auto scrollable-content pb-6"> 
+            <section id="home" class="content-section active">
+                <h2 class="text-3xl font-semibold mb-6">AION 홈</h2>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
+                    <div id="aionChartContainer" class="flex overflow-x-auto space-x-3 pb-3 horizontal-scroll sm:grid sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 lg:space-x-0 lg:pb-0">
+                        <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm flex-none">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
+                    </div>
+                </div>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-star mr-2 neon-accent"></i>추천 음악</h3>
+                    <div id="recommendedMusicContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                         <p id="recommendedMusicPlaceholder" class="text-gray-400 col-span-full text-sm">추천된 음악이 없습니다. 새로운 AI 음악 & MV 목록에서 별표를 눌러 추천해보세요!</p>
+                    </div>
+                </div>
+                <div class="mb-10">
+                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-music mr-2 neon-accent"></i>새로운 AI 음악 & MV</h3>
+                    <div id="newUploadsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        <p id="newUploadsPlaceholder" class="text-gray-400 col-span-full text-sm">업로드한 음악이나 뮤직비디오가 여기에 표시됩니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="discover" class="content-section">
+                <h2 class="text-3xl font-semibold mb-6">탐색하기</h2>
+                <div class="mb-6 flex flex-wrap gap-4">
+                    <select id="discoverGenreFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                        <option value="">장르 전체</option> 
+                        <option value="K-Pop">K-Pop</option> 
+                        <option value="발라드">발라드</option> 
+                        <option value="EDM">EDM</option> 
+                        <option value="힙합">힙합</option> 
+                        <option value="클래식">클래식</option> 
+                        <option value="재즈">재즈</option> 
+                        <option value="Lo-fi">Lo-fi</option> 
+                        <option value="팝">팝</option> 
+                        <option value="록">록</option> 
+                        <option value="기타">기타</option>
+                    </select>
+                    <select id="discoverMoodFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                        <option value="">분위기 전체</option> 
+                        <option value="신남">신남</option> 
+                        <option value="차분함">차분함</option> 
+                        <option value="몽환적">몽환적</option> 
+                        <option value="웅장함">웅장함</option> 
+                        <option value="경쾌함">경쾌함</option> 
+                        <option value="슬픔">슬픔</option> 
+                        <option value="긴장감">긴장감</option> 
+                        <option value="편안함">편안함</option>
+                    </select>
+                    </div>
+                <div id="discoverContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    <div class="youtube-playable glassmorphism p-3 rounded-lg hover:shadow-xl hover:shadow-purple-500/30 transition-shadow cursor-pointer" data-youtube-id="rB03Qut395k" data-item-id="initial-discover-1">
+                        {/* Action buttons will be dynamically generated by JS */}
+                        <img src="https://i.ytimg.com/vi/rB03Qut395k/hqdefault.jpg" alt="앨범 아트" class="w-full h-28 object-cover rounded-md mb-2 pointer-events-none" onerror="this.onerror=null;this.src='https://placehold.co/300x180/DB7093/FFFFFF?text=Discover+1';">
+                        <h4 class="item-title truncate">AI 재즈 스케이프</h4>
+                        <div class="item-artist-wrapper">
+                            <p class="item-artist text-gray-400 truncate">Neural Notes</p>
+                            {/* Subscribe icon will be dynamically generated by JS */}
+                        </div>
+                        <span class="item-tags neon-accent">#Jazz #AIModelY</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="library" class="content-section">
+                <h2 class="text-3xl font-semibold mb-6">내 보관함</h2>
+                <div class="space-y-8">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-medium">내 플레이리스트</h3>
+                            <button id="createPlaylistButton" class="neon-accent-bg text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-plus mr-1"></i> 새 플레이리스트
+                            </button>
+                        </div>
+                        <div id="myPlaylistsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <p id="myPlaylistsPlaceholder" class="text-gray-400 col-span-full text-sm">만든 플레이리스트가 없습니다.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium mb-3">좋아요 표시한 곡</h3>
+                        <div id="likedSongsContainer" class="space-y-2">
+                            <p id="likedSongsPlaceholder" class="text-gray-400 text-sm">아직 좋아요 표시한 곡이 없습니다.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium mb-3">구독한 AI 아티스트</h3>
+                        <div id="subscribedArtistsContainer" class="space-y-2">
+                             <p id="subscribedArtistsPlaceholder" class="text-gray-400 text-sm">아직 구독한 아티스트가 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="upload" class="content-section">
+                <h2 class="text-3xl font-semibold mb-6">AI 콘텐츠 업로드</h2>
+                <div class="glassmorphism p-8 rounded-lg max-w-2xl mx-auto">
+                    <form id="uploadForm" class="space-y-6">
+                        <div>
+                            <label for="uploadContentType" class="block text-sm font-medium mb-1">콘텐츠 유형</label>
+                            <select id="uploadContentType" name="uploadContentType" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                                <option value="mv">AI 뮤직 비디오 (YouTube)</option>
+                                <option value="music" disabled>AI 음악 (직접 업로드 - 추후 지원)</option>
+                            </select>
+                        </div>
+                        <div id="youtubeLinkGroup">
+                            <label for="uploadYoutubeLink" class="block text-sm font-medium mb-1">유튜브 영상 URL</label>
+                            <input type="url" id="uploadYoutubeLink" name="uploadYoutubeLink" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" placeholder="예: https://www.youtube.com/watch?v=VIDEO_ID" required>
+                            <img id="uploadThumbnailPreview" src="https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기" alt="썸네일 미리보기" class="mt-2 rounded-md w-full h-auto max-w-xs object-contain border border-purple-700/50">
+                        </div>
+                        <div>
+                            <label for="uploadTitle" class="block text-sm font-medium mb-1">제목</label>
+                            <input type="text" id="uploadTitle" name="uploadTitle" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" placeholder="예: 새벽 감성 AI 딥하우스" required>
+                        </div>
+                        <div>
+                            <label for="uploadAiMusicArtist" class="block text-sm font-medium mb-1">AI MUSIC ARTIST</label>
+                            <input type="text" id="uploadAiMusicArtist" name="uploadAiMusicArtist" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" placeholder="예: MyAIArtistName">
+                        </div>
+                        <div>
+                            <label for="uploadAiTool" class="block text-sm font-medium mb-1">사용된 AI 모델</label>
+                            <select id="uploadAiTool" name="uploadAiTool" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" required>
+                                <option value="">AI 모델 선택</option>
+                                <option value="Suno AI">Suno AI</option> <option value="Udio">Udio</option> <option value="Amper Music">Amper Music</option> <option value="AIVA">AIVA</option> <option value="Mubert">Mubert</option> <option value="RunwayML">RunwayML</option> <option value="Kaiber AI">Kaiber AI</option> <option value="기타/직접입력">기타/직접입력</option>
+                            </select>
+                        </div>
+                        <div class="mt-2">
+                            <input type="checkbox" id="uploadIsInstrumental" name="uploadIsInstrumental" class="rounded text-purple-600 focus:ring-purple-500">
+                            <label for="uploadIsInstrumental" class="ml-2 text-sm">악기 연주만 있는 음악</label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="uploadGenre" class="block text-sm font-medium mb-1">장르 선택</label>
+                                <select id="uploadGenre" name="uploadGenre" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                                    <option value="">장르 선택 안함</option> <option value="K-Pop">K-Pop</option> <option value="발라드">발라드</option> <option value="EDM">EDM</option> <option value="힙합">힙합</option> <option value="클래식">클래식</option> <option value="재즈">재즈</option> <option value="Lo-fi">Lo-fi</option> <option value="팝">팝</option> <option value="록">록</option> <option value="기타">기타</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="uploadMood" class="block text-sm font-medium mb-1">분위기 선택</label>
+                                <select id="uploadMood" name="uploadMood" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                                    <option value="">분위기 선택 안함</option> <option value="신남">신남</option> <option value="차분함">차분함</option> <option value="몽환적">몽환적</option> <option value="웅장함">웅장함</option> <option value="경쾌함">경쾌함</option> <option value="슬픔">슬픔</option> <option value="긴장감">긴장감</option> <option value="편안함">편안함</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="uploadTags" class="block text-sm font-medium mb-1">태그 (쉼표로 구분)</label>
+                            <input type="text" id="uploadTags" name="uploadTags" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" placeholder="예: #Chill, #Lo-fi, #AI음악">
+                        </div>
+                        <button type="submit" class="w-full px-6 py-3 neon-accent-bg text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors">업로드</button>
+                    </form>
+                </div>
+            </section>
+            
+            <section id="profile" class="content-section">
+                <h2 class="text-3xl font-semibold mb-6">내 프로필</h2>
+                 <div class="glassmorphism p-8 rounded-lg max-w-2xl mx-auto">
+                    <div class="flex flex-col items-center space-y-4">
+                        <img src="https://placehold.co/120x120/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-32 h-32 rounded-full border-4 border-purple-500">
+                        <h3 class="text-2xl font-semibold">사용자 이름 (또는 AI 아티스트명)</h3>
+                        <p class="text-gray-400">user_email@example.com</p>
+                        <button class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors">프로필 수정</button>
+                    </div>
+                    <div class="mt-8">
+                        <h4 class="text-lg font-medium mb-2">계정 정보</h4>
+                        <p class="text-gray-400">구독 상태: <span class="neon-accent">프리미엄</span></p>
+                        <p class="text-gray-400">가입일: 2024년 5월 21일</p>
+                    </div>
+                     <div class="mt-8">
+                        <h4 class="text-lg font-medium mb-2">내 AI 창작물 통계 (창작자용)</h4>
+                        <p class="text-gray-400">총 스트리밍: 10,580회</p>
+                        <p class="text-gray-400">팔로워: 120명</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="youtubeModal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism p-1 md:p-2 rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative">
+            <button id="closeYoutubeModalButton" class="absolute -top-3 -right-3 md:top-2 md:right-2 text-white bg-purple-600 hover:bg-purple-800 rounded-full w-8 h-8 flex items-center justify-center text-xl z-10"> × </button>
+            <div class="aspect-video"> <iframe id="youtubePlayer" width="100%" height="100%" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div id="createPlaylistModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-xl font-semibold mb-4">새 플레이리스트 만들기</h3>
+            <input type="text" id="newPlaylistName" placeholder="플레이리스트 이름" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none mb-4 text-sm">
+            <div class="flex justify-end space-x-3">
+                <button id="cancelCreatePlaylist" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button>
+                <button id="confirmCreatePlaylist" class="px-4 py-2 neon-accent-bg hover:bg-purple-700 rounded-lg text-sm font-medium">만들기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addToPlaylistModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-xl font-semibold mb-4">플레이리스트에 추가</h3>
+            <div id="playlistSelectionContainer" class="space-y-2 mb-4 max-h-60 overflow-y-auto scrollable-content pr-2">
+                <p id="playlistSelectionPlaceholder" class="text-gray-400 text-sm">플레이리스트가 없습니다. 먼저 플레이리스트를 만들어주세요.</p>
+            </div>
+            <input type="text" id="newPlaylistNameInAddModal" placeholder="또는 새 플레이리스트 이름 입력" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none mb-4 text-sm">
+            <div class="flex justify-end space-x-3">
+                <button id="cancelAddToPlaylist" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button>
+                <button id="confirmAddToPlaylist" class="px-4 py-2 neon-accent-bg hover:bg-purple-700 rounded-lg text-sm font-medium">추가</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="playlistDetailModal" class="modal fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-2xl modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="playlistDetailName" class="text-2xl font-semibold">플레이리스트 이름</h3>
+                <button id="closePlaylistDetailModal" class="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
+            <div id="playlistDetailItemsContainer" class="space-y-3 max-h-[calc(80vh-150px)] overflow-y-auto scrollable-content pr-2">
+                <p id="playlistDetailPlaceholder" class="text-gray-400 text-sm">이 플레이리스트에 곡이 없습니다.</p>
+            </div>
+             <div class="mt-4 flex justify-end space-x-2">
+                <button id="deletePlaylistButton" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium">플레이리스트 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editItemModal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism p-8 rounded-lg shadow-xl w-full max-w-2xl modal-content overflow-y-auto">
+            <h3 class="text-xl font-semibold mb-6 text-center">콘텐츠 정보 수정</h3>
+            <form id="editItemForm" class="space-y-4">
+                <input type="hidden" id="editItemId">
+                <div>
+                    <label for="editYoutubeLink" class="block text-sm font-medium mb-1">유튜브 영상 URL</label>
+                    <input type="url" id="editYoutubeLink" name="editYoutubeLink" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" required>
+                    <img id="editThumbnailPreview" src="https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기" alt="썸네일 미리보기" class="mt-2 rounded-md w-full h-auto max-w-xs object-contain border border-purple-700/50">
+                </div>
+                <div>
+                    <label for="editTitle" class="block text-sm font-medium mb-1">제목</label>
+                    <input type="text" id="editTitle" name="editTitle" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" required>
+                </div>
+                <div>
+                    <label for="editAiMusicArtist" class="block text-sm font-medium mb-1">AI MUSIC ARTIST</label>
+                    <input type="text" id="editAiMusicArtist" name="editAiMusicArtist" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                </div>
+                <div>
+                    <label for="editAiTool" class="block text-sm font-medium mb-1">사용된 AI 모델</label>
+                    <select id="editAiTool" name="editAiTool" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm" required>
+                        <option value="">AI 모델 선택</option>
+                        <option value="Suno AI">Suno AI</option> <option value="Udio">Udio</option> <option value="Amper Music">Amper Music</option> <option value="AIVA">AIVA</option> <option value="Mubert">Mubert</option> <option value="RunwayML">RunwayML</option> <option value="Kaiber AI">Kaiber AI</option> <option value="기타/직접입력">기타/직접입력</option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <input type="checkbox" id="editIsInstrumental" name="editIsInstrumental" class="rounded text-purple-600 focus:ring-purple-500">
+                    <label for="editIsInstrumental" class="ml-2 text-sm">악기 연주만 있는 음악</label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="editGenre" class="block text-sm font-medium mb-1">장르 선택</label>
+                        <select id="editGenre" name="editGenre" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                            <option value="">장르 선택 안함</option> <option value="K-Pop">K-Pop</option> <option value="발라드">발라드</option> <option value="EDM">EDM</option> <option value="힙합">힙합</option> <option value="클래식">클래식</option> <option value="재즈">재즈</option> <option value="Lo-fi">Lo-fi</option> <option value="팝">팝</option> <option value="록">록</option> <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="editMood" class="block text-sm font-medium mb-1">분위기 선택</label>
+                        <select id="editMood" name="editMood" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                            <option value="">분위기 선택 안함</option> <option value="신남">신남</option> <option value="차분함">차분함</option> <option value="몽환적">몽환적</option> <option value="웅장함">웅장함</option> <option value="경쾌함">경쾌함</option> <option value="슬픔">슬픔</option> <option value="긴장감">긴장감</option> <option value="편안함">편안함</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="editTags" class="block text-sm font-medium mb-1">태그 (쉼표로 구분)</label>
+                    <input type="text" id="editTags" name="editTags" class="w-full p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancelEditItem" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button>
+                    <button type="submit" class="px-4 py-2 neon-accent-bg hover:bg-purple-700 rounded-lg text-sm font-medium">변경사항 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="toastMessage" class="toast-message"></div>
+
+    <script>
+        // --- 관리자 모드 설정 ---
+        const isAdminMode = false; // 관리자용: true, 배포용: false
+
+        // --- 네비게이션 및 UI 기본 로직 ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentSections = document.querySelectorAll('.content-section');
+        const activeNavClass = 'neon-accent-bg';
+        const inactiveNavClass = 'hover:bg-purple-700/30';
+
+        document.getElementById('home').classList.add('active');
+        const homeNavItem = document.querySelector('.nav-item[data-section="home"]');
+        if (homeNavItem) {
+            homeNavItem.classList.add(activeNavClass);
+            homeNavItem.classList.remove(inactiveNavClass);
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sectionId = item.dataset.section;
+                contentSections.forEach(section => section.classList.remove('active'));
+                navItems.forEach(nav => {
+                    nav.classList.remove(activeNavClass);
+                    nav.classList.add(inactiveNavClass);
+                });
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) targetSection.classList.add('active');
+                item.classList.add(activeNavClass);
+                item.classList.remove(inactiveNavClass);
+            });
+        });
+
+        // 관리자 모드에 따른 업로드 메뉴 숨기기
+        const uploadSection = document.getElementById('upload');
+        const uploadNavItem = document.querySelector('.nav-item[data-section="upload"]');
+        if (!isAdminMode) {
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (uploadNavItem) uploadNavItem.style.display = 'none';
+        }
+        
+        // --- YouTube 관련 함수 ---
+        function getYouTubeId(url) {
+            let videoId = '';
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2].length === 11) {
+                videoId = match[2];
+            } else {
+                const shortMatch = url.match(/youtu.be\/([^#\&\?]{11})/);
+                if (shortMatch && shortMatch[1]) {
+                    videoId = shortMatch[1];
+                }
+            }
+            return videoId;
+        }
+
+        function getYouTubeThumbnailUrl(videoId) {
+            return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+        }
+        
+        const defaultThumbnail = 'https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기';
+        const thumbnailErrorPlaceholder = 'https://placehold.co/300x180/330033/FFFFFF?text=썸네일+오류';
+
+        // --- localStorage 관련 함수 ---
+        const USER_UPLOADS_KEY = 'aionUserUploads';
+        const PLAYLISTS_KEY = 'aionPlaylists';
+        const SUBSCRIBED_ARTISTS_KEY = 'aionSubscribedArtists';
+        const LIKED_ITEMS_KEY = 'aionLikedItems';
+
+
+        function generateItemId(prefix = 'item') { 
+            return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+
+        function getStoredData(key) {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function saveData(key, dataArray) {
+            localStorage.setItem(key, JSON.stringify(dataArray));
+        }
+        
+        // --- 알림 메시지 함수 ---
+        const toastMessageElement = document.getElementById('toastMessage');
+        function showToast(message) {
+            if (!toastMessageElement) return;
+            toastMessageElement.textContent = message;
+            toastMessageElement.classList.add('show');
+            setTimeout(() => {
+                toastMessageElement.classList.remove('show');
+            }, 3000);
+        }
+
+        // --- 콘텐츠 렌더링 함수 ---
+        const newUploadsContainer = document.getElementById('newUploadsContainer');
+        const newUploadsPlaceholder = document.getElementById('newUploadsPlaceholder');
+        const aionChartContainer = document.getElementById('aionChartContainer');
+        const aionChartPlaceholder = document.getElementById('aionChartPlaceholder');
+        const recommendedMusicContainer = document.getElementById('recommendedMusicContainer');
+        const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
+        const discoverContainer = document.getElementById('discoverContainer');
+        const myPlaylistsContainer = document.getElementById('myPlaylistsContainer');
+        const myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
+        const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
+        const subscribedArtistsPlaceholder = document.getElementById('subscribedArtistsPlaceholder');
+        const likedSongsContainer = document.getElementById('likedSongsContainer'); 
+        const likedSongsPlaceholder = document.getElementById('likedSongsPlaceholder'); 
+
+
+        function createContentItemHTML(itemData, isChartItem = false, isRecommendedItem = false, isDiscoverItem = false, currentContainer = null) {
+            let tagsHTML = itemData.tags ? itemData.tags.split(',').map(tag => `#${tag.trim()}`).join(' ') : '';
+            if (itemData.genre) tagsHTML += ` <span class="text-purple-400">#${itemData.genre}</span>`;
+            if (itemData.mood) tagsHTML += ` <span class="text-green-300">#${itemData.mood}</span>`;
+            if (itemData.isInstrumental) tagsHTML += ` <span class="text-cyan-400">#Instrumental</span>`; 
+            
+            if (isChartItem) tagsHTML += ` <span class="text-yellow-300"><i class="fas fa-eye text-xs"></i> ${itemData.views || 0}</span>`;
+
+            let actionButtons = [];
+            let currentRightOffset = 0.3; 
+            const offsetIncrement = 1.5;
+
+            // 1. Add to Playlist
+            actionButtons.push(`<i class="fas fa-list-ul item-action-icon add-to-playlist-icon" title="플레이리스트에 추가" style="right: ${currentRightOffset}rem; top: ${isChartItem || isRecommendedItem ? '0.3rem' : '0.3rem'};"></i>`); // 위치 일관성
+            currentRightOffset += offsetIncrement;
+
+            // 2. Like Button
+            const isLiked = isItemLiked(itemData.itemId);
+            const likeIconClass = isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart';
+            const likeTitle = isLiked ? '좋아요 취소' : '좋아요';
+            actionButtons.push(`<i class="${likeIconClass} item-action-icon like-item-button" title="${likeTitle}" style="right: ${currentRightOffset}rem; top: ${isChartItem || isRecommendedItem ? '0.3rem' : '0.3rem'};"></i>`);
+            currentRightOffset += offsetIncrement;
+            
+            // 3. Recommend Checkbox (새로운 AI 음악 & MV 섹션의 사용자 업로드 아이템에만)
+            if (currentContainer && currentContainer.id === 'newUploadsContainer' && !itemData.isInitialDemo) {
+                let starIconClass = itemData.isRecommended ? 'fas fa-star' : 'far fa-star';
+                let starColorClass = itemData.isRecommended ? 'recommended' : '';
+                let recommendTitleText = itemData.isRecommended ? '추천 취소' : '추천 하기';
+                actionButtons.push(`<i class="${starIconClass} item-action-icon recommend-checkbox-icon ${starColorClass}" title="${recommendTitleText}" style="right: ${currentRightOffset}rem;"></i>`);
+                currentRightOffset += offsetIncrement;
+            }
+
+            // 4. Edit and Delete Buttons (AION 차트와 추천 음악 제외, 관리자 모드일 때만)
+            if (isAdminMode && !isChartItem && !isRecommendedItem) {
+                actionButtons.push(`<i class="fas fa-pencil-alt item-action-icon edit-youtube-link" title="콘텐츠 정보 수정" style="right: ${currentRightOffset}rem;"></i>`);
+                currentRightOffset += offsetIncrement;
+                actionButtons.push(`<i class="fas fa-trash-alt item-action-icon delete-item-button" title="콘텐츠 삭제" style="right: ${currentRightOffset}rem;"></i>`);
+            }
+            
+            const actionButtonsHTML = actionButtons.join('');
+            const imageClass = "h-28"; 
+            const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
+            const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
+            const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
+            const subscribeTitle = isSubscribedByCurrentUser ? `${artistDisplay} 구독 취소` : `${artistDisplay} 구독`;
+
+
+            return `
+                ${actionButtonsHTML}
+                <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full ${imageClass} object-cover rounded-md mb-2 pointer-events-none" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
+                <h4 class="item-title truncate">${itemData.title}</h4>
+                <div class="item-artist-wrapper">
+                    <p class="item-artist text-gray-400 truncate">${artistDisplay}</p>
+                    <i class="${subscribeIconClass} subscribe-artist-icon" data-artist-name="${artistDisplay}" title="${subscribeTitle}"></i>
+                </div>
+                <span class="item-tags neon-accent">${tagsHTML}</span>
+            `;
+        }
+        
+        function renderContentItem(itemData, container, isChartItem = false, isRecommendedItem = false, isDiscoverItem = false) {
+            if (!container) return;
+            const newItemDiv = document.createElement('div');
+            let itemClasses = 'youtube-playable glassmorphism p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer';
+
+            if (isChartItem) { 
+                itemClasses += ' w-4/5 flex-none sm:w-auto'; 
+            }
+            
+            newItemDiv.className = itemClasses;
+            newItemDiv.dataset.youtubeId = itemData.youtubeId;
+            newItemDiv.dataset.itemId = itemData.itemId; 
+            newItemDiv.innerHTML = createContentItemHTML(itemData, isChartItem, isRecommendedItem, isDiscoverItem, container); 
+            
+            if (!isChartItem && container === newUploadsContainer) {
+                 container.insertBefore(newItemDiv, container.firstChild);
+            } else {
+                 container.appendChild(newItemDiv);
+            }
+        }
+        
+        function clearContainer(container, placeholderElement = null) { 
+            if (!container) return;
+            const childrenToRemove = [];
+            Array.from(container.children).forEach(child => {
+                if (child !== placeholderElement) { 
+                    childrenToRemove.push(child);
+                }
+            });
+            childrenToRemove.forEach(child => container.removeChild(child));
+        }
+
+        function getInitialDemoItemsForNewUploads() {
+            return [];
+        }
+
+
+        function loadAndRenderUserUploads() {
+            const storedUploads = getStoredData(USER_UPLOADS_KEY);
+
+            if (newUploadsContainer) {
+                clearContainer(newUploadsContainer, newUploadsPlaceholder); 
+                const initialDemos = getInitialDemoItemsForNewUploads(); 
+                
+                const userUploadsForNewSection = storedUploads.filter(item => !item.isInitialDemo); 
+                if (userUploadsForNewSection.length > 0) {
+                    if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden');
+                    userUploadsForNewSection.forEach(item => renderContentItem(item, newUploadsContainer, false, false, false));
+                } else {
+                     if(newUploadsPlaceholder && !newUploadsContainer.contains(newUploadsPlaceholder)) {
+                        newUploadsContainer.appendChild(newUploadsPlaceholder);
+                     }
+                     if(newUploadsPlaceholder) newUploadsPlaceholder.classList.remove('hidden');
+                }
+            }
+            renderAionChart(); 
+            renderRecommendedMusic(); 
+            renderMyPlaylists(); 
+            renderSubscribedArtists(); 
+            renderLikedSongs(); 
+        }
+        
+        function renderRecommendedMusic() {
+            if (!recommendedMusicContainer || !recommendedMusicPlaceholder) return;
+            clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder); 
+
+            const storedUploads = getStoredData(USER_UPLOADS_KEY);
+            const recommendedItems = storedUploads.filter(item => item.isRecommended === true && !item.isInitialDemo);
+
+            if (recommendedItems.length > 0) {
+                recommendedMusicPlaceholder.classList.add('hidden'); 
+                recommendedItems.forEach(item => {
+                     renderContentItem(item, recommendedMusicContainer, false, true, false);
+                });
+            } else {
+                if (!recommendedMusicContainer.contains(recommendedMusicPlaceholder)) {
+                    recommendedMusicContainer.appendChild(recommendedMusicPlaceholder);
+                }
+                recommendedMusicPlaceholder.classList.remove('hidden');
+            }
+        }
+        
+        function renderDiscoverItems() { 
+            if (!discoverContainer) return;
+            clearContainer(discoverContainer);
+            const initialDiscoverItems = [
+                 {itemId: "initial-discover-1", youtubeId: "rB03Qut395k", title: "AI 재즈 스케이프", aiMusicArtist: "Neural Notes", aiTool: "기타/직접입력", tags: "#Jazz,#AIModelY", genre: "재즈", mood: "차분함", views: 75, isInitialDemo: true},
+            ];
+            initialDiscoverItems.forEach(item => {
+                renderContentItem(item, discoverContainer, false, false, true);
+            });
+        }
+
+
+        function renderAionChart() {
+            if (!aionChartContainer || !aionChartPlaceholder) return;
+            clearContainer(aionChartContainer, aionChartPlaceholder); 
+
+            const storedUploads = getStoredData(USER_UPLOADS_KEY);
+            const chartItemsData = storedUploads
+                .filter(item => (item.views || 0) > 0 && !item.isInitialDemo) 
+                .sort((a, b) => (b.views || 0) - (a.views || 0)) 
+                .slice(0, 10); 
+
+            if (chartItemsData.length > 0) {
+                aionChartPlaceholder.classList.add('hidden'); 
+                chartItemsData.forEach(item => renderContentItem(item, aionChartContainer, true, false, false));
+            } else {
+                if (!aionChartContainer.contains(aionChartPlaceholder)) { 
+                    aionChartContainer.appendChild(aionChartPlaceholder);
+                }
+                aionChartPlaceholder.classList.remove('hidden');
+            }
+        }
+
+
+        // --- 업로드 섹션 로직 ---
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadYoutubeLinkInput = document.getElementById('uploadYoutubeLink'); 
+        const uploadThumbnailPreview = document.getElementById('uploadThumbnailPreview'); 
+
+        if (uploadYoutubeLinkInput && uploadThumbnailPreview) {
+            uploadYoutubeLinkInput.addEventListener('input', () => {
+                const url = uploadYoutubeLinkInput.value;
+                const videoId = getYouTubeId(url);
+                uploadThumbnailPreview.src = videoId ? getYouTubeThumbnailUrl(videoId) : defaultThumbnail;
+            });
+             const initialUrl = uploadYoutubeLinkInput.value; 
+            if (initialUrl) {
+                const initialVideoId = getYouTubeId(initialUrl);
+                uploadThumbnailPreview.src = initialVideoId ? getYouTubeThumbnailUrl(initialVideoId) : defaultThumbnail;
+            } else {
+                 uploadThumbnailPreview.src = defaultThumbnail; 
+            }
+        }
+
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const youtubeUrl = document.getElementById('uploadYoutubeLink').value;
+                const title = document.getElementById('uploadTitle').value;
+                const aiMusicArtist = document.getElementById('uploadAiMusicArtist').value; 
+                const aiTool = document.getElementById('uploadAiTool').value;
+                const isInstrumental = document.getElementById('uploadIsInstrumental').checked;
+                const genre = document.getElementById('uploadGenre').value; 
+                const mood = document.getElementById('uploadMood').value;
+                const tags = document.getElementById('uploadTags').value;
+
+
+                const youtubeId = getYouTubeId(youtubeUrl);
+
+                if (!youtubeId) {
+                    showToast('유효한 유튜브 URL을 입력해주세요.');
+                    return;
+                }
+                if (!title || !aiTool ) { 
+                    showToast('제목과 사용된 AI 모델을 입력/선택해주세요.');
+                    return;
+                }
+
+                const newItemData = {
+                    itemId: generateItemId(),
+                    youtubeId: youtubeId,
+                    title: title,
+                    aiMusicArtist: aiMusicArtist, 
+                    aiTool: aiTool, 
+                    isInstrumental: isInstrumental,
+                    genre: genre,   
+                    mood: mood,
+                    tags: tags,
+                    views: 0,
+                    isRecommended: false, 
+                    isInitialDemo: false 
+                };
+                
+                const currentUploads = getStoredData(USER_UPLOADS_KEY);
+                currentUploads.push(newItemData);
+                saveData(USER_UPLOADS_KEY, currentUploads);
+                
+                loadAndRenderUserUploads(); 
+                
+                uploadForm.reset();
+                if(uploadThumbnailPreview) uploadThumbnailPreview.src = defaultThumbnail;
+                document.getElementById('uploadGenre').value = ""; 
+                document.getElementById('uploadMood').value = ""; 
+                document.getElementById('uploadAiTool').value = ""; 
+                document.getElementById('uploadIsInstrumental').checked = false;
+                showToast('콘텐츠가 성공적으로 업로드 및 저장되었습니다!');
+            });
+        }
+
+        // --- YouTube 모달, 콘텐츠 수정, 삭제, 추천, 아티스트 구독, 좋아요 로직 ---
+        const youtubeModal = document.getElementById('youtubeModal');
+        const closeYoutubeModalButton = document.getElementById('closeYoutubeModalButton');
+        const youtubePlayer = document.getElementById('youtubePlayer');
+        let currentItemToAddToPlaylist = null; 
+        let currentEditingItemId = null; 
+
+        const editItemModal = document.getElementById('editItemModal');
+        const editItemForm = document.getElementById('editItemForm');
+        const cancelEditItemButton = document.getElementById('cancelEditItem');
+        const editThumbnailPreview = document.getElementById('editThumbnailPreview');
+        const editYoutubeLinkInput = document.getElementById('editYoutubeLink');
+
+
+        if(editYoutubeLinkInput && editThumbnailPreview) {
+            editYoutubeLinkInput.addEventListener('input', () => {
+                const url = editYoutubeLinkInput.value;
+                const videoId = getYouTubeId(url);
+                editThumbnailPreview.src = videoId ? getYouTubeThumbnailUrl(videoId) : defaultThumbnail;
+            });
+        }
+
+
+        function openEditModal(itemId) {
+            const storedUploads = getStoredData(USER_UPLOADS_KEY);
+            const itemToEdit = storedUploads.find(item => item.itemId === itemId);
+
+            if (!itemToEdit || !editItemModal || !editItemForm) return;
+            currentEditingItemId = itemId;
+
+            document.getElementById('editItemId').value = itemToEdit.itemId;
+            document.getElementById('editYoutubeLink').value = `https://www.youtube.com/watch?v=$${itemToEdit.youtubeId}`;
+            editThumbnailPreview.src = getYouTubeThumbnailUrl(itemToEdit.youtubeId);
+            document.getElementById('editTitle').value = itemToEdit.title;
+            document.getElementById('editAiMusicArtist').value = itemToEdit.aiMusicArtist || ''; 
+            document.getElementById('editAiTool').value = itemToEdit.aiTool;
+            document.getElementById('editIsInstrumental').checked = itemToEdit.isInstrumental || false;
+            document.getElementById('editGenre').value = itemToEdit.genre || '';
+            document.getElementById('editMood').value = itemToEdit.mood || '';
+            document.getElementById('editTags').value = itemToEdit.tags || '';
+            
+            editItemModal.classList.remove('hidden');
+            editItemModal.classList.add('flex');
+        }
+
+        if(editItemForm) {
+            editItemForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                if (!currentEditingItemId) return;
+
+                const newYoutubeUrl = document.getElementById('editYoutubeLink').value;
+                const newYoutubeId = getYouTubeId(newYoutubeUrl);
+
+                if (!newYoutubeId) {
+                    showToast('유효한 유튜브 URL을 입력해주세요.');
+                    return;
+                }
+                
+                const updatedItemData = {
+                    itemId: currentEditingItemId,
+                    youtubeId: newYoutubeId,
+                    title: document.getElementById('editTitle').value,
+                    aiMusicArtist: document.getElementById('editAiMusicArtist').value, 
+                    aiTool: document.getElementById('editAiTool').value,
+                    isInstrumental: document.getElementById('editIsInstrumental').checked,
+                    genre: document.getElementById('editGenre').value,
+                    mood: document.getElementById('editMood').value,
+                    tags: document.getElementById('editTags').value,
+                };
+
+                let storedUploads = getStoredData(USER_UPLOADS_KEY);
+                const itemIndex = storedUploads.findIndex(item => item.itemId === currentEditingItemId);
+
+                if (itemIndex > -1) {
+                    updatedItemData.views = storedUploads[itemIndex].views || 0;
+                    updatedItemData.isRecommended = storedUploads[itemIndex].isRecommended || false;
+                    updatedItemData.isInitialDemo = storedUploads[itemIndex].isInitialDemo || false;
+
+
+                    storedUploads[itemIndex] = updatedItemData;
+                    saveData(USER_UPLOADS_KEY, storedUploads);
+                    loadAndRenderUserUploads();
+                    if(editItemModal) editItemModal.classList.add('hidden');
+                    showToast('콘텐츠 정보가 업데이트되었습니다.');
+                    currentEditingItemId = null;
+                } else {
+                    showToast('항목을 찾을 수 없어 업데이트에 실패했습니다.');
+                }
+            });
+        }
+        
+        if(cancelEditItemButton) {
+            cancelEditItemButton.addEventListener('click', () => {
+                if(editItemModal) editItemModal.classList.add('hidden');
+                currentEditingItemId = null;
+            });
+        }
+
+        
+        document.body.addEventListener('click', function(event) {
+            const targetPlayableItem = event.target.closest('.youtube-playable');
+            const targetEditButton = event.target.closest('.edit-youtube-link');
+            const targetDeleteButton = event.target.closest('.delete-item-button');
+            const targetRecommendButton = event.target.closest('.recommend-checkbox-icon');
+            const targetAddToPlaylistButton = event.target.closest('.add-to-playlist-icon');
+            const targetSubscribeButton = event.target.closest('.subscribe-artist-icon');
+            const targetLikeButton = event.target.closest('.like-item-button');
+
+
+            if (targetPlayableItem && !targetEditButton && !targetDeleteButton && !targetRecommendButton && !targetAddToPlaylistButton && !targetSubscribeButton && !targetLikeButton) { 
+                const youtubeId = targetPlayableItem.dataset.youtubeId;
+                const itemId = targetPlayableItem.dataset.itemId;
+
+                if (youtubeId && youtubePlayer && youtubeModal) {
+                    youtubePlayer.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`;
+                    youtubeModal.classList.remove('hidden');
+                    youtubeModal.classList.add('flex');
+
+                    if (itemId && !itemId.startsWith('initial-')) { 
+                        let storedUploads = getStoredData(USER_UPLOADS_KEY);
+                        const itemIndex = storedUploads.findIndex(item => item.itemId === itemId);
+                        if (itemIndex > -1) {
+                            storedUploads[itemIndex].views = (storedUploads[itemIndex].views || 0) + 1;
+                            saveData(USER_UPLOADS_KEY, storedUploads);
+                            renderAionChart(); 
+                        }
+                    }
+                }
+            }
+
+            if (isAdminMode && targetEditButton) { 
+                event.stopPropagation(); 
+                const playableItemElement = targetEditButton.closest('.youtube-playable');
+                const itemIdToEdit = playableItemElement.dataset.itemId;
+
+                if (itemIdToEdit && !itemIdToEdit.startsWith('initial-')) { 
+                    openEditModal(itemIdToEdit);
+                } else if (itemIdToEdit && itemIdToEdit.startsWith('initial-')) { 
+                    const currentYoutubeId = playableItemElement.dataset.youtubeId;
+                    const newYoutubeUrl = prompt("[데모 아이템 임시수정] 새로운 유튜브 영상 URL을 입력하세요:", `https://www.youtube.com/watch?v=${currentYoutubeId}`);
+                    if (newYoutubeUrl) {
+                        const newYoutubeId = getYouTubeId(newYoutubeUrl);
+                        if (newYoutubeId) {
+                            playableItemElement.dataset.youtubeId = newYoutubeId;
+                            const imgElement = playableItemElement.querySelector('img');
+                            if (imgElement) imgElement.src = getYouTubeThumbnailUrl(newYoutubeId);
+                            showToast('[임시] 데모 링크가 수정되었습니다. 새로고침하면 원래대로 돌아갑니다.');
+                        } else {
+                           showToast("유효하지 않은 유튜브 URL입니다.");
+                        }
+                    }
+                }
+            }
+
+            if (isAdminMode && targetDeleteButton) { 
+                event.stopPropagation();
+                const playableItemElement = targetDeleteButton.closest('.youtube-playable');
+                const itemIdToDelete = playableItemElement.dataset.itemId;
+
+                if (itemIdToDelete && !itemIdToDelete.startsWith('initial-')) { 
+                    let storedUploads = getStoredData(USER_UPLOADS_KEY);
+                    const updatedUploads = storedUploads.filter(item => item.itemId !== itemIdToDelete);
+                    saveData(USER_UPLOADS_KEY, updatedUploads);
+                    
+                    let playlists = getStoredData(PLAYLISTS_KEY);
+                    playlists.forEach(pl => {
+                        pl.items = pl.items.filter(id => id !== itemIdToDelete);
+                    });
+                    saveData(PLAYLISTS_KEY, playlists);
+
+                    playableItemElement.remove(); 
+                    renderAionChart();
+                    renderRecommendedMusic(); 
+                    renderMyPlaylists(); 
+                    showToast('콘텐츠가 삭제되었습니다.');
+                } else if (itemIdToDelete && itemIdToDelete.startsWith('initial-')) { 
+                     playableItemElement.remove();
+                     showToast('데모 콘텐츠가 UI에서 제거되었습니다. 새로고침하면 복구됩니다.');
+                }
+            }
+
+            if (targetRecommendButton) {
+                event.stopPropagation();
+                const playableItemElement = targetRecommendButton.closest('.youtube-playable');
+                const itemIdToRecommend = playableItemElement.dataset.itemId;
+
+                if (itemIdToRecommend && !itemIdToRecommend.startsWith('initial-')) { 
+                    let storedUploads = getStoredData(USER_UPLOADS_KEY);
+                    const itemIndex = storedUploads.findIndex(item => item.itemId === itemIdToRecommend);
+                    if (itemIndex > -1) {
+                        storedUploads[itemIndex].isRecommended = !storedUploads[itemIndex].isRecommended; 
+                        saveData(USER_UPLOADS_KEY, storedUploads);
+                        loadAndRenderUserUploads(); 
+                        showToast(storedUploads[itemIndex].isRecommended ? '추천 목록에 추가되었습니다.' : '추천 목록에서 제거되었습니다.');
+                    }
+                } else if (itemIdToRecommend && itemIdToRecommend.startsWith('initial-')) {
+                    showToast('데모 콘텐츠는 추천 상태를 변경할 수 없습니다.');
+                }
+            }
+
+            if (targetAddToPlaylistButton) {
+                event.stopPropagation();
+                const playableItemElement = targetAddToPlaylistButton.closest('.youtube-playable');
+                currentItemToAddToPlaylist = playableItemElement.dataset.itemId;
+                openAddToPlaylistModal();
+            }
+
+            if (targetSubscribeButton) {
+                event.stopPropagation();
+                const artistName = targetSubscribeButton.dataset.artistName;
+                if (artistName) {
+                    toggleArtistSubscription(artistName);
+                }
+            }
+            
+            if (targetLikeButton) {
+                event.stopPropagation();
+                const playableItemElement = targetLikeButton.closest('.youtube-playable');
+                const itemIdToLike = playableItemElement.dataset.itemId;
+                if(itemIdToLike){
+                    toggleLikeItem(itemIdToLike);
+                }
+            }
+        });
+
+        if (closeYoutubeModalButton && youtubeModal && youtubePlayer) {
+            closeYoutubeModalButton.addEventListener('click', () => {
+                youtubePlayer.src = ''; 
+                youtubeModal.classList.add('hidden');
+                youtubeModal.classList.remove('flex');
+            });
+        }
+
+        if (youtubeModal && youtubePlayer) {
+            youtubeModal.addEventListener('click', (event) => {
+                if (event.target === youtubeModal) {
+                    youtubePlayer.src = ''; 
+                    youtubeModal.classList.add('hidden');
+                    youtubeModal.classList.remove('flex');
+                }
+            });
+        }
+        
+        // --- 업로드 섹션 필드 토글 로직 ---
+        const uploadContentTypeSelect = document.getElementById('uploadContentType');
+        const youtubeLinkGroup = document.getElementById('youtubeLinkGroup');
+        const audioUploadGroup = document.getElementById('audioUploadGroup');
+
+        function toggleUploadFields() {
+            if (!uploadContentTypeSelect) return;
+            if (uploadContentTypeSelect.value === 'mv') {
+                if (youtubeLinkGroup) youtubeLinkGroup.classList.remove('hidden');
+                if (audioUploadGroup) audioUploadGroup.classList.add('hidden');
+            } else if (uploadContentTypeSelect.value === 'music') {
+                if (youtubeLinkGroup) youtubeLinkGroup.classList.add('hidden');
+                if (audioUploadGroup) audioUploadGroup.classList.remove('hidden');
+            }
+        }
+        if (uploadContentTypeSelect) {
+            uploadContentTypeSelect.addEventListener('change', toggleUploadFields);
+            toggleUploadFields(); 
+        }
+
+        // --- 플레이리스트 관련 로직 ---
+        const createPlaylistButton = document.getElementById('createPlaylistButton');
+        const createPlaylistModal = document.getElementById('createPlaylistModal');
+        const cancelCreatePlaylist = document.getElementById('cancelCreatePlaylist');
+        const confirmCreatePlaylist = document.getElementById('confirmCreatePlaylist');
+        const newPlaylistNameInput = document.getElementById('newPlaylistName');
+
+        const addToPlaylistModal = document.getElementById('addToPlaylistModal');
+        const playlistSelectionContainer = document.getElementById('playlistSelectionContainer');
+        const playlistSelectionPlaceholder = document.getElementById('playlistSelectionPlaceholder');
+        const newPlaylistNameInAddModalInput = document.getElementById('newPlaylistNameInAddModal');
+        const cancelAddToPlaylist = document.getElementById('cancelAddToPlaylist');
+        const confirmAddToPlaylist = document.getElementById('confirmAddToPlaylist');
+
+        const playlistDetailModal = document.getElementById('playlistDetailModal');
+        const playlistDetailNameElement = document.getElementById('playlistDetailName');
+        const playlistDetailItemsContainer = document.getElementById('playlistDetailItemsContainer');
+        const playlistDetailPlaceholder = document.getElementById('playlistDetailPlaceholder');
+        const closePlaylistDetailModalButton = document.getElementById('closePlaylistDetailModal');
+        const deletePlaylistButton = document.getElementById('deletePlaylistButton');
+        let currentViewingPlaylistId = null;
+
+
+        if(createPlaylistButton) {
+            createPlaylistButton.addEventListener('click', () => {
+                if(createPlaylistModal) createPlaylistModal.classList.remove('hidden');
+                if(newPlaylistNameInput) newPlaylistNameInput.value = '';
+            });
+        }
+        if(cancelCreatePlaylist) {
+            cancelCreatePlaylist.addEventListener('click', () => {
+                if(createPlaylistModal) createPlaylistModal.classList.add('hidden');
+            });
+        }
+        if(confirmCreatePlaylist) {
+            confirmCreatePlaylist.addEventListener('click', () => {
+                const playlistName = newPlaylistNameInput.value.trim();
+                if (playlistName) {
+                    const playlists = getStoredData(PLAYLISTS_KEY);
+                    const newPlaylist = {
+                        id: generateItemId('pl'),
+                        name: playlistName,
+                        items: []
+                    };
+                    playlists.push(newPlaylist);
+                    saveData(PLAYLISTS_KEY, playlists);
+                    renderMyPlaylists();
+                    if(createPlaylistModal) createPlaylistModal.classList.add('hidden');
+                    showToast(`플레이리스트 '${playlistName}'가 생성되었습니다.`);
+                } else {
+                    showToast('플레이리스트 이름을 입력해주세요.');
+                }
+            });
+        }
+
+        function openAddToPlaylistModal() {
+            if (!addToPlaylistModal || !playlistSelectionContainer || !playlistSelectionPlaceholder) return;
+            
+            const playlists = getStoredData(PLAYLISTS_KEY);
+            playlistSelectionContainer.innerHTML = ''; 
+
+            if (playlists.length > 0) {
+                playlistSelectionPlaceholder.classList.add('hidden');
+                playlists.forEach(pl => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2 p-2 hover:bg-purple-700/30 rounded-md cursor-pointer';
+                    div.dataset.playlistId = pl.id;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'radio'; 
+                    input.name = 'playlistSelection';
+                    input.value = pl.id;
+                    input.className = 'form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500';
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `pl-select-${pl.id}`;
+                    label.textContent = pl.name;
+                    label.className = 'text-sm';
+                    input.id = `pl-select-${pl.id}`;
+
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    label.addEventListener('click', (e) => { e.stopPropagation(); input.checked = true; });
+                    div.addEventListener('click', () => { input.checked = true; });
+
+                    playlistSelectionContainer.appendChild(div);
+                });
+            } else {
+                playlistSelectionContainer.appendChild(playlistSelectionPlaceholder);
+                playlistSelectionPlaceholder.classList.remove('hidden');
+            }
+            newPlaylistNameInAddModalInput.value = '';
+            addToPlaylistModal.classList.remove('hidden');
+        }
+
+        if(cancelAddToPlaylist) {
+            cancelAddToPlaylist.addEventListener('click', () => {
+                if(addToPlaylistModal) addToPlaylistModal.classList.add('hidden');
+                currentItemToAddToPlaylist = null;
+            });
+        }
+
+        if(confirmAddToPlaylist) {
+            confirmAddToPlaylist.addEventListener('click', () => {
+                if (!currentItemToAddToPlaylist) return;
+
+                const selectedRadio = playlistSelectionContainer.querySelector('input[name="playlistSelection"]:checked');
+                const newPlaylistName = newPlaylistNameInAddModalInput.value.trim();
+                let playlists = getStoredData(PLAYLISTS_KEY);
+                let targetPlaylistId = null;
+
+                if (newPlaylistName) { 
+                    const newPlaylist = { id: generateItemId('pl'), name: newPlaylistName, items: [currentItemToAddToPlaylist] };
+                    playlists.push(newPlaylist);
+                    targetPlaylistId = newPlaylist.id;
+                    showToast(`'${newPlaylistName}' 플레이리스트에 곡을 추가했습니다.`);
+                } else if (selectedRadio) { 
+                    targetPlaylistId = selectedRadio.value;
+                    const playlist = playlists.find(p => p.id === targetPlaylistId);
+                    if (playlist) {
+                        if (!playlist.items.includes(currentItemToAddToPlaylist)) {
+                            playlist.items.push(currentItemToAddToPlaylist);
+                            showToast(`'${playlist.name}' 플레이리스트에 곡을 추가했습니다.`);
+                        } else {
+                            showToast('이미 해당 플레이리스트에 있는 곡입니다.');
+                        }
+                    }
+                } else {
+                    showToast('플레이리스트를 선택하거나 새 플레이리스트 이름을 입력해주세요.');
+                    return;
+                }
+                
+                saveData(PLAYLISTS_KEY, playlists);
+                renderMyPlaylists(); 
+                if(addToPlaylistModal) addToPlaylistModal.classList.add('hidden');
+                currentItemToAddToPlaylist = null;
+            });
+        }
+        
+        function renderMyPlaylists() {
+            if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return;
+            clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder);
+            const playlists = getStoredData(PLAYLISTS_KEY);
+
+            if (playlists.length > 0) {
+                myPlaylistsPlaceholder.classList.add('hidden');
+                playlists.forEach(pl => {
+                    const card = document.createElement('div');
+                    card.className = 'playlist-card glassmorphism cursor-pointer';
+                    card.dataset.playlistId = pl.id;
+
+                    const cover = document.createElement('div');
+                    cover.className = 'playlist-cover';
+                    if (pl.items.length > 0) {
+                        const firstItemId = pl.items[0];
+                        const storedUploads = getStoredData(USER_UPLOADS_KEY);
+                        const allDemoItems = [
+                            ...getInitialDemoItemsForNewUploads(),
+                            ...getInitialDemoItemsForDiscover(),
+                            ...getInitialDemoItemsForRecommended()
+                        ];
+                        const firstItemData = storedUploads.find(item => item.itemId === firstItemId) || 
+                                              allDemoItems.find(item => item.itemId === firstItemId);
+
+
+                        if (firstItemData && firstItemData.youtubeId) {
+                            const img = document.createElement('img');
+                            img.src = getYouTubeThumbnailUrl(firstItemData.youtubeId);
+                            img.alt = pl.name;
+                            img.className = 'w-full h-full object-cover rounded-md';
+                            img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music"></i>'; }; 
+                            cover.appendChild(img);
+                        } else {
+                             cover.innerHTML = '<i class="fas fa-music"></i>';
+                        }
+                    } else {
+                        cover.innerHTML = '<i class="fas fa-music"></i>';
+                    }
+
+
+                    const info = document.createElement('div');
+                    const name = document.createElement('h4');
+                    name.className = 'font-semibold text-sm';
+                    name.textContent = pl.name;
+                    const count = document.createElement('p');
+                    count.className = 'text-xs text-gray-400';
+                    count.textContent = `${pl.items.length}곡`;
+
+                    info.appendChild(name);
+                    info.appendChild(count);
+                    card.appendChild(cover);
+                    card.appendChild(info);
+                    
+                    card.addEventListener('click', () => openPlaylistDetailModal(pl.id));
+                    myPlaylistsContainer.appendChild(card);
+                });
+            } else {
+                 if (!myPlaylistsContainer.contains(myPlaylistsPlaceholder)) {
+                    myPlaylistsContainer.appendChild(myPlaylistsPlaceholder);
+                }
+                myPlaylistsPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        function openPlaylistDetailModal(playlistId) {
+            currentViewingPlaylistId = playlistId;
+            const playlists = getStoredData(PLAYLISTS_KEY);
+            const playlist = playlists.find(p => p.id === playlistId);
+            if (!playlist || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return;
+
+            playlistDetailNameElement.textContent = playlist.name;
+            clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder);
+
+            if (playlist.items.length > 0) {
+                playlistDetailPlaceholder.classList.add('hidden');
+                const storedUploads = getStoredData(USER_UPLOADS_KEY);
+                const allPossibleItems = [
+                    ...storedUploads, 
+                    ...getInitialDemoItemsForNewUploads(), 
+                    ...getInitialDemoItemsForDiscover(),
+                    ...getInitialDemoItemsForRecommended()
+                ];
+
+
+                playlist.items.forEach(itemId => {
+                    const itemData = allPossibleItems.find(item => item.itemId === itemId);
+                    if (itemData) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'youtube-playable glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20';
+                        itemDiv.dataset.youtubeId = itemData.youtubeId;
+                        itemDiv.dataset.itemId = itemData.itemId;
+
+                        const img = document.createElement('img');
+                        img.src = getYouTubeThumbnailUrl(itemData.youtubeId);
+                        img.alt = itemData.title;
+                        img.className = 'w-12 h-12 object-cover rounded-md mr-3';
+                        img.onerror = function() { this.src = thumbnailErrorPlaceholder; };
+
+
+                        const textInfoDiv = document.createElement('div');
+                        textInfoDiv.className = 'flex-grow';
+                        const titleH5 = document.createElement('h5');
+                        titleH5.className = 'item-title truncate';
+                        titleH5.textContent = itemData.title;
+                        const artistP = document.createElement('p');
+                        artistP.className = 'item-artist text-gray-400 truncate';
+                        artistP.textContent = itemData.aiMusicArtist || itemData.aiTool || 'N/A';
+                        textInfoDiv.appendChild(titleH5);
+                        textInfoDiv.appendChild(artistP);
+
+                        const playButton = document.createElement('button');
+                        playButton.className = 'p-2 text-gray-300 hover:text-white';
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        playButton.addEventListener('click', (e) => {
+                            e.stopPropagation(); 
+                             if (youtubePlayer && youtubeModal) {
+                                youtubePlayer.src = `https://www.youtube.com/embed/${itemData.youtubeId}?autoplay=1&rel=0`;
+                                youtubeModal.classList.remove('hidden');
+                                youtubeModal.classList.add('flex');
+                            }
+                        });
+                        
+                        const removeButton = document.createElement('button');
+                        removeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2';
+                        removeButton.innerHTML = '<i class="fas fa-times"></i>';
+                        removeButton.title = "플레이리스트에서 삭제";
+                        removeButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            removeSongFromPlaylist(playlistId, itemId);
+                        });
+
+
+                        itemDiv.appendChild(img);
+                        itemDiv.appendChild(textInfoDiv);
+                        itemDiv.appendChild(playButton);
+                        itemDiv.appendChild(removeButton);
+                        playlistDetailItemsContainer.appendChild(itemDiv);
+                    }
+                });
+            } else {
+                if(!playlistDetailItemsContainer.contains(playlistDetailPlaceholder)){
+                    playlistDetailItemsContainer.appendChild(playlistDetailPlaceholder);
+                }
+                playlistDetailPlaceholder.classList.remove('hidden');
+            }
+            playlistDetailModal.classList.remove('hidden');
+        }
+        
+        if(closePlaylistDetailModalButton) {
+            closePlaylistDetailModalButton.addEventListener('click', () => {
+                if(playlistDetailModal) playlistDetailModal.classList.add('hidden');
+                currentViewingPlaylistId = null;
+            });
+        }
+
+        if(deletePlaylistButton) {
+            deletePlaylistButton.addEventListener('click', () => {
+                if (currentViewingPlaylistId) {
+                    let playlists = getStoredData(PLAYLISTS_KEY);
+                    playlists = playlists.filter(pl => pl.id !== currentViewingPlaylistId);
+                    saveData(PLAYLISTS_KEY, playlists);
+                    renderMyPlaylists();
+                    if(playlistDetailModal) playlistDetailModal.classList.add('hidden');
+                    showToast('플레이리스트가 삭제되었습니다.');
+                    currentViewingPlaylistId = null;
+                }
+            });
+        }
+
+        function removeSongFromPlaylist(playlistId, itemIdToRemove) {
+            let playlists = getStoredData(PLAYLISTS_KEY);
+            const playlistIndex = playlists.findIndex(pl => pl.id === playlistId);
+            if (playlistIndex > -1) {
+                playlists[playlistIndex].items = playlists[playlistIndex].items.filter(id => id !== itemIdToRemove);
+                saveData(PLAYLISTS_KEY, playlists);
+                openPlaylistDetailModal(playlistId); 
+                renderMyPlaylists(); 
+                showToast('플레이리스트에서 곡이 삭제되었습니다.');
+            }
+        }
+
+        function getInitialDemoItemsForDiscover() {
+             return [
+                 {itemId: "initial-discover-1", youtubeId: "rB03Qut395k", title: "AI 재즈 스케이프", aiMusicArtist: "Neural Notes", aiTool: "기타/직접입력", tags: "#Jazz,#AIModelY", genre: "재즈", mood: "차분함", views: 75, isInitialDemo: true},
+            ];
+        }
+        function getInitialDemoItemsForRecommended() {
+            return [];
+        }
+
+        // --- 아티스트 구독 관련 로직 ---
+        function getSubscribedArtists() {
+            return getStoredData(SUBSCRIBED_ARTISTS_KEY);
+        }
+
+        function saveSubscribedArtists(artistsArray) {
+            saveData(SUBSCRIBED_ARTISTS_KEY, artistsArray);
+        }
+
+        function isArtistSubscribed(artistName) {
+            if (!artistName) return false; 
+            const subscribedArtists = getSubscribedArtists();
+            return subscribedArtists.includes(artistName);
+        }
+
+        function toggleArtistSubscription(artistName) {
+            if (!artistName || artistName === 'N/A') { 
+                 showToast('유효한 아티스트 이름이 아닙니다.');
+                return;
+            }
+            let subscribedArtists = getSubscribedArtists();
+            const isSubscribed = subscribedArtists.includes(artistName);
+
+            if (isSubscribed) {
+                subscribedArtists = subscribedArtists.filter(name => name !== artistName);
+                showToast(`${artistName} 구독을 취소했습니다.`);
+            } else {
+                subscribedArtists.push(artistName);
+                showToast(`${artistName}을(를) 구독했습니다.`);
+            }
+            saveSubscribedArtists(subscribedArtists);
+            loadAndRenderUserUploads(); 
+        }
+
+        function renderSubscribedArtists() {
+            if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return;
+            clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder);
+            const subscribedArtists = getSubscribedArtists();
+
+            if (subscribedArtists.length > 0) {
+                subscribedArtistsPlaceholder.classList.add('hidden');
+                subscribedArtists.forEach(artistName => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 glassmorphism rounded-md hover:bg-purple-700/20';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-sm';
+                    nameSpan.textContent = artistName;
+
+                    const unsubscribeButton = document.createElement('button');
+                    unsubscribeButton.className = 'text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-700/20';
+                    unsubscribeButton.textContent = '구독 취소';
+                    unsubscribeButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleArtistSubscription(artistName);
+                    });
+
+                    div.appendChild(nameSpan);
+                    div.appendChild(unsubscribeButton);
+                    subscribedArtistsContainer.appendChild(div);
+                });
+
+            } else {
+                if (!subscribedArtistsContainer.contains(subscribedArtistsPlaceholder)) {
+                    subscribedArtistsContainer.appendChild(subscribedArtistsPlaceholder);
+                }
+                subscribedArtistsPlaceholder.classList.remove('hidden');
+            }
+        }
+        
+        // --- 좋아요 기능 로직 ---
+        function getLikedItems() {
+            return getStoredData(LIKED_ITEMS_KEY);
+        }
+        function saveLikedItems(likedItemsArray) {
+            saveData(LIKED_ITEMS_KEY, likedItemsArray);
+        }
+        function isItemLiked(itemId) {
+            if (!itemId) return false;
+            return getLikedItems().includes(itemId);
+        }
+        function toggleLikeItem(itemId) {
+            if (!itemId) return;
+            let likedItems = getLikedItems();
+            const itemIndex = likedItems.indexOf(itemId);
+            if (itemIndex > -1) {
+                likedItems.splice(itemIndex, 1);
+                showToast('좋아요를 취소했습니다.');
+            } else {
+                likedItems.push(itemId);
+                showToast('좋아요 표시한 곡에 추가했습니다.');
+            }
+            saveLikedItems(likedItems);
+            loadAndRenderUserUploads(); 
+        }
+
+        function renderLikedSongs() {
+            if (!likedSongsContainer || !likedSongsPlaceholder) return;
+            clearContainer(likedSongsContainer, likedSongsPlaceholder);
+            const likedItemIds = getLikedItems();
+            const allUserUploads = getStoredData(USER_UPLOADS_KEY);
+            const allDemoItems = [ 
+                 ...getInitialDemoItemsForDiscover(),
+            ];
+            const allPossibleItems = [...allUserUploads, ...allDemoItems];
+
+
+            if (likedItemIds.length > 0) {
+                likedSongsPlaceholder.classList.add('hidden');
+                likedItemIds.forEach(likedId => {
+                    const itemData = allPossibleItems.find(item => item.itemId === likedId);
+                    if (itemData) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'youtube-playable glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20 cursor-pointer';
+                        itemDiv.dataset.youtubeId = itemData.youtubeId;
+                        itemDiv.dataset.itemId = itemData.itemId;
+
+                        const img = document.createElement('img');
+                        img.src = getYouTubeThumbnailUrl(itemData.youtubeId);
+                        img.alt = itemData.title;
+                        img.className = 'w-12 h-12 object-cover rounded-md mr-3';
+                        img.onerror = function() { this.src = thumbnailErrorPlaceholder; };
+
+                        const textInfoDiv = document.createElement('div');
+                        textInfoDiv.className = 'flex-grow';
+                        const titleH5 = document.createElement('h5');
+                        titleH5.className = 'item-title truncate';
+                        titleH5.textContent = itemData.title;
+                        const artistP = document.createElement('p');
+                        artistP.className = 'item-artist text-gray-400 truncate';
+                        artistP.textContent = itemData.aiMusicArtist || itemData.aiTool || 'N/A';
+                        textInfoDiv.appendChild(titleH5);
+                        textInfoDiv.appendChild(artistP);
+                        
+                        const actionWrapper = document.createElement('div');
+                        actionWrapper.className = 'flex items-center';
+
+                        const playButton = document.createElement('button');
+                        playButton.className = 'p-2 text-gray-300 hover:text-white';
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        playButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (youtubePlayer && youtubeModal) {
+                                youtubePlayer.src = `https://www.youtube.com/embed/${itemData.youtubeId}?autoplay=1&rel=0`;
+                                youtubeModal.classList.remove('hidden');
+                                youtubeModal.classList.add('flex');
+                            }
+                        });
+
+                        const unlikeButton = document.createElement('button');
+                        unlikeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2';
+                        unlikeButton.innerHTML = '<i class="fas fa-heart-broken"></i>';
+                        unlikeButton.title = "좋아요 취소";
+                        unlikeButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleLikeItem(itemData.itemId);
+                        });
+                        
+                        actionWrapper.appendChild(playButton);
+                        actionWrapper.appendChild(unlikeButton);
+
+                        itemDiv.appendChild(img);
+                        itemDiv.appendChild(textInfoDiv);
+                        itemDiv.appendChild(actionWrapper);
+                        likedSongsContainer.appendChild(itemDiv);
+                    }
+                });
+            } else {
+                if (!likedSongsContainer.contains(likedSongsPlaceholder)) {
+                    likedSongsContainer.appendChild(likedSongsPlaceholder);
+                }
+                likedSongsPlaceholder.classList.remove('hidden');
+            }
+        }
+
+
+        // --- 페이지 로드 시 실행 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAndRenderUserUploads(); 
+            renderDiscoverItems(); 
+        });
+
+    </script>
+</body>
+</html>
