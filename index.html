@@ -1616,20 +1616,20 @@
                 if (exportContentButtonContainer) exportContentButtonContainer.style.display = 'none';
 
                 try {
-                    const response = await fetch('aion_content.json'); // 경로 수정: `./` 제거
+                    const response = await fetch('aion_content.json'); // 단순 상대 경로 사용
                     if (!response.ok) {
                         if (response.status === 404) {
                              console.warn('aion_content.json not found. Displaying only demo content or empty sections.');
                              allContentData = []; 
                         } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            throw new Error(`HTTP error! status: ${response.status} for aion_content.json`);
                         }
                     } else {
                         allContentData = await response.json();
                     }
                 } catch (error) {
-                    console.error('Could not load aion_content.json:', error);
-                    showToast('콘텐츠를 불러오는데 실패했습니다.');
+                    console.error('Could not load aion_content.json:', error); // 오류 객체 전체 로깅
+                    showToast('콘텐츠를 불러오는데 실패했습니다. (오류: ' + error.message + ')');
                     allContentData = []; 
                 }
                 renderPageContent();
