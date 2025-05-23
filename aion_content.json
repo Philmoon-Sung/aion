@@ -10,7 +10,7 @@
     "mood": "차분함",
     "tags": "AI 음악, SUNO AI, 토요라이브, 성필문",
     "views": 6,
-    "isRecommended": true,
+    "isRecommended": false,
     "isInitialDemo": false
   },
   {
@@ -24,7 +24,7 @@
     "mood": "슬픔",
     "tags": "AI 음악, SUNO AI, 토요라이브, 성필문",
     "views": 2,
-    "isRecommended": true,
+    "isRecommended": false,
     "isInitialDemo": false
   },
   {
@@ -38,7 +38,7 @@
     "mood": "슬픔",
     "tags": "AI 음악, SUNO AI, 토요라이브, 성필문",
     "views": 3,
-    "isRecommended": true,
+    "isRecommended": false,
     "isInitialDemo": false
   },
   {
@@ -52,7 +52,7 @@
     "mood": "편안함",
     "tags": "",
     "views": 2,
-    "isRecommended": true,
+    "isRecommended": false,
     "isInitialDemo": false
   },
   {
@@ -66,7 +66,7 @@
     "mood": "편안함",
     "tags": "",
     "views": 4,
-    "isRecommended": true,
+    "isRecommended": false,
     "isInitialDemo": false
   },
   {
@@ -79,7 +79,7 @@
     "genre": "발라드",
     "mood": "슬픔",
     "tags": "",
-    "views": 1,
+    "views": 3,
     "isRecommended": true,
     "isInitialDemo": false
   },
@@ -93,7 +93,7 @@
     "genre": "K-Pop",
     "mood": "슬픔",
     "tags": "",
-    "views": 3,
+    "views": 9,
     "isRecommended": true,
     "isInitialDemo": false
   },
@@ -107,7 +107,7 @@
     "genre": "록",
     "mood": "신남",
     "tags": "",
-    "views": 2,
+    "views": 7,
     "isRecommended": true,
     "isInitialDemo": false
   },
@@ -121,7 +121,7 @@
     "genre": "록",
     "mood": "웅장함",
     "tags": "",
-    "views": 1,
+    "views": 4,
     "isRecommended": true,
     "isInitialDemo": false
   },
@@ -135,7 +135,7 @@
     "genre": "K-Pop",
     "mood": "경쾌함",
     "tags": "",
-    "views": 2,
+    "views": 3,
     "isRecommended": true,
     "isInitialDemo": false
   },
@@ -149,7 +149,7 @@
     "genre": "K-Pop",
     "mood": "경쾌함",
     "tags": "",
-    "views": 1,
+    "views": 6,
     "isRecommended": false,
     "isInitialDemo": false
   },
@@ -163,8 +163,8 @@
     "genre": "K-Pop",
     "mood": "차분함",
     "tags": "",
-    "views": 1,
-    "isRecommended": false,
+    "views": 9,
+    "isRecommended": true,
     "isInitialDemo": false
   },
   {
@@ -191,8 +191,8 @@
     "genre": "K-Pop",
     "mood": "차분함",
     "tags": "",
-    "views": 1,
-    "isRecommended": false,
+    "views": 5,
+    "isRecommended": true,
     "isInitialDemo": false
   },
   {
@@ -247,8 +247,8 @@
     "genre": "팝",
     "mood": "긴장감",
     "tags": "",
-    "views": 2,
-    "isRecommended": false,
+    "views": 4,
+    "isRecommended": true,
     "isInitialDemo": false
   },
   {
@@ -289,8 +289,8 @@
     "genre": "K-Pop",
     "mood": "긴장감",
     "tags": "",
-    "views": 0,
-    "isRecommended": false,
+    "views": 3,
+    "isRecommended": true,
     "isInitialDemo": false
   },
   {
@@ -303,8 +303,8 @@
     "genre": "K-Pop",
     "mood": "차분함",
     "tags": "",
-    "views": 0,
-    "isRecommended": false,
+    "views": 6,
+    "isRecommended": true,
     "isInitialDemo": false
   }
 ]
