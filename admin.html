@@ -43,10 +43,10 @@
             position: absolute;
             top: 0.5rem; 
             right: 0.5rem; 
-            display: flex; /* 가로 배열을 위해 flex 사용 */
-            flex-direction: row; /* 명시적으로 가로 방향 */
-            align-items: center; /* 수직 중앙 정렬 */
-            gap: 0.35rem; /* 버튼 간 간격 */
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            gap: 0.35rem; 
             z-index: 10;
         }
         .item-action-icon {
@@ -83,7 +83,7 @@
             transform: scale(1.2);
         }
         .youtube-playable:hover .item-action-icon { opacity: 0.8; }
-        .youtube-playable { position: relative; padding-top: 3rem; /* 액션 버튼 공간 확보 */}
+        .youtube-playable { position: relative; padding-top: 3rem; }
 
         .toast-message {
             position: fixed; bottom: 20px; left: 50%;
@@ -98,7 +98,7 @@
         @media (min-width: 768px) { 
             .item-title { font-size: 0.875rem; } 
             .item-artist, .item-tags { font-size: 0.75rem; } 
-            .youtube-playable { padding-top: 0; } /* PC에서는 추가 패딩 불필요 */
+            .youtube-playable { padding-top: 0; } 
         }
         .item-artist-wrapper { display: flex; align-items: center; } 
 
@@ -149,10 +149,10 @@
 <body class="flex h-screen overflow-hidden">
 
     <aside id="desktopSidebar" class="hidden md:flex w-64 glassmorphism p-4 space-y-8 flex-col items-start fixed inset-y-0 left-0 z-30">
-        <div class="flex items-center justify-start space-x-2 mb-10">
-            <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        <div class="flex items-center justify-start space-x-3 mb-10"> {/* space-x-3으로 조정 */}
+            <svg class="h-12 w-12 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
-            <h1 class="text-2xl font-bold">AION</h1>
+            <h1 class="text-3xl font-bold">AION</h1> {/* 폰트 크기 증가 */}
         </div>
         <nav class="space-y-4 flex-grow w-full">
             <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
@@ -185,9 +185,9 @@
     <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
     <aside id="mobileSidebar" class="fixed inset-y-0 left-0 w-64 glassmorphism p-4 space-y-8 flex flex-col items-start z-40 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
         <div class="flex items-center justify-between w-full mb-6">
-            <div class="flex items-center space-x-2">
-                <svg class="h-8 w-8 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/> </svg>
-                <h1 class="text-xl font-bold">AION</h1>
+            <div class="flex items-center space-x-3"> {/* space-x-3으로 조정 */}
+                <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/> </svg>
+                <h1 class="text-2xl font-bold">AION</h1> {/* 폰트 크기 증가 */}
             </div>
             <button id="closeMobileSidebarButton" class="text-gray-400 hover:text-white">
                 <i class="fas fa-times text-2xl"></i>
@@ -240,7 +240,6 @@
 
         <div class="flex-grow p-4 sm:p-6 overflow-y-auto scrollable-content pb-6"> 
             <section id="home" class="content-section active">
-                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">AION 홈</h2>
                 <div class="mb-8 sm:mb-10">
                     <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-xs sm:text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
                     <div id="aionChartContainer" class="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-3">
@@ -717,10 +716,10 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
-            // AION 차트 및 다른 섹션들의 모바일 그리드 레이아웃을 위해 flex-none 제거
-            // if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth < 640 ) { 
-            //      itemClasses += ' w-3/5 flex-none'; 
-            // }
+            // AION 차트는 모바일에서 가로 스크롤 유지, 나머지는 grid-cols-2
+            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth < 640 ) { 
+                 itemClasses += ' w-3/5 flex-none'; 
+            }
             
             newItemDiv.className = itemClasses;
             newItemDiv.dataset.youtubeId = itemData.youtubeId;
@@ -1699,8 +1698,14 @@
                 renderPageContent();
             } else {
                 if (uploadSection) uploadSection.style.display = 'none';
-                if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
-                if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
+                if (uploadNavItemDesktop) { // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음
+                    const discoverNavItem = desktopSidebar.querySelector('.nav-item[data-section="discover"]');
+                    if(discoverNavItem) discoverNavItem.style.display = 'none';
+                }
+                if (uploadNavItemMobile) { // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음
+                     const discoverNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="discover"]');
+                    if(discoverNavItemMobile) discoverNavItemMobile.style.display = 'none';
+                }
                 if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'none';
                 if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'none';
 
