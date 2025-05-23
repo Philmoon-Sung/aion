@@ -12,7 +12,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #0a031a; 
             color: #e0e0e0; 
-            overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior: none; 
         }
         .neon-accent { color: #8A2BE2; }
         .neon-accent-bg { background-color: #8A2BE2; }
@@ -85,8 +85,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.875rem; font-weight: 500; }
-        .item-artist, .item-tags { font-size: 0.75rem; }
+        .item-title { font-size: 0.8rem; font-weight: 500; } /* 모바일 폰트 크기 조정 */
+        .item-artist, .item-tags { font-size: 0.7rem; } /* 모바일 폰트 크기 조정 */
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -116,13 +116,27 @@
             color: rgba(224, 224, 224, 0.7); 
         }
 
-        /* 모바일 사이드바 스타일 */
         #mobileSidebar.hidden {
             transform: translateX(-100%);
         }
         #mobileSidebarOverlay.hidden {
             display: none;
         }
+        /* 썸네일 비율 유지를 위한 스타일 */
+        .thumbnail-aspect-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 150%; /* 2:3 ratio (6:9) -> height will be 1.5 times the width */
+            overflow: hidden;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .thumbnail-aspect-container img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 이미지가 비율을 유지하며 컨테이너를 채움 */
+        }
+
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -204,7 +218,7 @@
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 <div class="relative w-full max-w-xs sm:max-w-md"> 
-                    <input type="search" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
+                    <input type="search" id="searchInput" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
                     <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-base"></i>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-4 ml-auto">
@@ -221,7 +235,7 @@
                 <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">AION 홈</h2>
                 <div class="mb-8 sm:mb-10">
                     <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-xs sm:text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
-                    <div id="aionChartContainer" class="flex overflow-x-auto space-x-3 pb-3 horizontal-scroll sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-3 sm:space-x-0 sm:pb-0">
+                    <div id="aionChartContainer" class="flex overflow-x-auto space-x-3 pb-3 horizontal-scroll sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-3 sm:space-x-0 sm:pb-0">
                         <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm flex-none whitespace-nowrap">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
                     </div>
                 </div>
@@ -506,7 +520,7 @@
         const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
         const mobileMenuButton = document.getElementById('mobileMenuButton');
         const closeMobileSidebarButton = document.getElementById('closeMobileSidebarButton');
-        const mainContentArea = document.getElementById('mainContentArea'); // ID 추가
+        const mainContentArea = document.getElementById('mainContentArea'); 
 
 
         document.getElementById('home').classList.add('active');
@@ -564,7 +578,6 @@
             if (mobileSidebar && mobileSidebarOverlay && mainContentArea) {
                 mobileSidebar.classList.remove('-translate-x-full');
                 mobileSidebarOverlay.classList.remove('hidden');
-                // mainContentArea.classList.add('md:ml-0'); // 데스크탑 사이드바가 없을 때 메인 콘텐츠가 왼쪽으로 붙도록
             }
         }
 
@@ -572,7 +585,6 @@
             if (mobileSidebar && mobileSidebarOverlay && mainContentArea) {
                 mobileSidebar.classList.add('-translate-x-full');
                 mobileSidebarOverlay.classList.add('hidden');
-                // mainContentArea.classList.remove('md:ml-0');
             }
         }
 
@@ -665,6 +677,7 @@
         const recommendedMusicContainer = document.getElementById('recommendedMusicContainer');
         const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
         const discoverContainer = document.getElementById('discoverContainer');
+        const discoverPlaceholder = document.getElementById('discoverPlaceholder');
         const myPlaylistsContainer = document.getElementById('myPlaylistsContainer');
         const myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
         const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
@@ -713,7 +726,9 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            const imageClass = "h-20 sm:h-24 md:h-28"; // 반응형 높이 조정
+            const imageContainerClass = "thumbnail-aspect-container mb-2"; // 6:9 비율 컨테이너
+            const imageClass = ""; // 내부 이미지는 컨테이너에 맞춤
+
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -722,7 +737,9 @@
 
             return `
                 ${actionButtonsHTML}
-                <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full ${imageClass} object-cover rounded-md mb-2 pointer-events-none" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
+                <div class="${imageContainerClass}">
+                    <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
+                </div>
                 <h4 class="item-title truncate">${itemData.title}</h4>
                 <div class="item-artist-wrapper">
                     <p class="item-artist text-gray-400 truncate">${artistDisplay}</p>
@@ -735,11 +752,11 @@
         function renderContentItem(itemData, container, isChartItem = false, isRecommendedItem = false, isDiscoverItem = false) {
             if (!container) return;
             const newItemDiv = document.createElement('div');
-            let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; // 모바일 패딩 조정
+            let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
             // AION 차트 아이템에 대한 모바일 가로 스크롤 너비 조정
             if (isChartItem && container.id === 'aionChartContainer') { 
-                itemClasses += ' w-3/4 sm:w-4/5 md:w-auto flex-none'; // 모바일에서 너비 조정 (w-2/3 -> w-3/4)
+                itemClasses += ' w-3/5 sm:w-auto flex-none'; // 모바일에서 너비 조정 (w-2/3 -> w-3/4)
             }
             
             newItemDiv.className = itemClasses;
@@ -770,17 +787,31 @@
         }
         
         // --- 메인 콘텐츠 로딩 및 렌더링 함수 ---
-        function renderPageContent() {
-            // allContentData를 사용하여 각 섹션 렌더링
-            renderNewUploadsSection(allContentData);
-            renderAionChart(allContentData);
-            renderRecommendedMusicSection(allContentData);
-            renderDiscoverItems(); // 디스커버는 자체 데모 또는 allContentData 기반 필터링
-            
-            // 사용자별 데이터는 계속 localStorage에서 로드
-            renderMyPlaylists();
-            renderSubscribedArtists();
-            renderLikedSongs();
+        function renderPageContent(contentToRender = allContentData, targetContainerId = null) {
+            if (targetContainerId) { // 특정 컨테이너만 업데이트 (검색/필터용)
+                const container = document.getElementById(targetContainerId);
+                const placeholder = document.getElementById(`${targetContainerId}Placeholder`);
+                if (container) {
+                    clearContainer(container, placeholder);
+                    if (contentToRender.length > 0) {
+                        if(placeholder) placeholder.classList.add('hidden');
+                        contentToRender.forEach(item => renderContentItem(item, container, false, false, targetContainerId === 'discoverContainer'));
+                    } else {
+                        if(placeholder && !container.contains(placeholder)) container.appendChild(placeholder);
+                        if(placeholder) placeholder.classList.remove('hidden');
+                        if(placeholder && targetContainerId === 'discoverContainer') placeholder.textContent = "검색 또는 필터 결과가 없습니다.";
+                    }
+                }
+            } else { // 전체 페이지 렌더링
+                renderNewUploadsSection(contentToRender);
+                renderAionChart(contentToRender);
+                renderRecommendedMusicSection(contentToRender);
+                renderDiscoverItems(); // 디스커버는 자체 데모 또는 초기 데이터로
+                
+                renderMyPlaylists();
+                renderSubscribedArtists();
+                renderLikedSongs();
+            }
         }
         
         function renderNewUploadsSection(items) {
@@ -795,7 +826,10 @@
                  if(newUploadsPlaceholder && !newUploadsContainer.contains(newUploadsPlaceholder)) {
                     newUploadsContainer.appendChild(newUploadsPlaceholder);
                  }
-                 if(newUploadsPlaceholder) newUploadsPlaceholder.classList.remove('hidden');
+                 if(newUploadsPlaceholder) {
+                    newUploadsPlaceholder.classList.remove('hidden');
+                    newUploadsPlaceholder.textContent = "업로드한 음악이나 뮤직비디오가 여기에 표시됩니다.";
+                 }
             }
         }
 
@@ -838,15 +872,28 @@
             }
         }
 
-        function renderDiscoverItems() { 
+        function renderDiscoverItems(filteredItems = null) { 
             if (!discoverContainer) return;
-            clearContainer(discoverContainer);
-            const initialDiscoverItems = [
+            clearContainer(discoverContainer, discoverPlaceholder);
+            
+            const itemsToRender = filteredItems !== null ? filteredItems : [ // 검색/필터 결과가 있으면 그것을, 없으면 초기 데모
                  {itemId: "initial-discover-1", youtubeId: "rB03Qut395k", title: "AI 재즈 스케이프", aiMusicArtist: "Neural Notes", aiTool: "기타/직접입력", tags: "#Jazz,#AIModelY", genre: "재즈", mood: "차분함", views: 75, isInitialDemo: true},
             ];
-            initialDiscoverItems.forEach(item => {
-                renderContentItem(item, discoverContainer, false, false, true);
-            });
+
+            if (itemsToRender.length > 0) {
+                if(discoverPlaceholder) discoverPlaceholder.classList.add('hidden');
+                itemsToRender.forEach(item => {
+                    renderContentItem(item, discoverContainer, false, false, true);
+                });
+            } else {
+                if(discoverPlaceholder && !discoverContainer.contains(discoverPlaceholder)) {
+                    discoverContainer.appendChild(discoverPlaceholder);
+                }
+                if(discoverPlaceholder) {
+                     discoverPlaceholder.classList.remove('hidden');
+                     discoverPlaceholder.textContent = filteredItems !== null ? "검색 또는 필터 결과가 없습니다." : "탐색할 콘텐츠가 로드 중이거나 없습니다.";
+                }
+            }
         }
 
 
@@ -913,11 +960,10 @@
                 currentUploads.push(newItemData);
                 saveData(USER_UPLOADS_KEY, currentUploads);
                 
-                // 관리자 모드일 경우, allContentData도 업데이트 후 전체 리렌더링
                 if (isAdminMode) {
                     allContentData = currentUploads;
-                    renderPageContent();
                 }
+                renderPageContent(); 
                 
                 uploadForm.reset();
                 if(uploadThumbnailPreview) uploadThumbnailPreview.src = defaultThumbnail;
@@ -977,7 +1023,7 @@
         if(editItemForm) {
             editItemForm.addEventListener('submit', function(event) {
                 event.preventDefault();
-                if (!currentEditingItemId || !isAdminMode) return; // 관리자만 수정 가능
+                if (!currentEditingItemId || !isAdminMode) return; 
 
                 const newYoutubeUrl = document.getElementById('editYoutubeLink').value;
                 const newYoutubeId = getYouTubeId(newYoutubeUrl);
@@ -1011,7 +1057,7 @@
                     storedUploads[itemIndex] = updatedItemData;
                     saveData(USER_UPLOADS_KEY, storedUploads);
                     
-                    allContentData = storedUploads; // 관리자 모드이므로 allContentData 업데이트
+                    allContentData = storedUploads; 
                     renderPageContent();
 
                     if(editItemModal) editItemModal.classList.add('hidden');
@@ -1055,9 +1101,9 @@
                         const itemIndex = currentContentSource.findIndex(item => item.itemId === itemId);
                         if (itemIndex > -1) {
                             currentContentSource[itemIndex].views = (currentContentSource[itemIndex].views || 0) + 1;
-                            if(isAdminMode) { // 관리자 모드일 때만 localStorage에 저장
+                            if(isAdminMode) { 
                                 saveData(USER_UPLOADS_KEY, currentContentSource);
-                            } // 사용자 모드에서는 allContentData가 이미 업데이트됨 (메모리상)
+                            } 
                             renderAionChart(allContentData); 
                         }
                     }
@@ -1072,19 +1118,8 @@
                 if (itemIdToEdit && !itemIdToEdit.startsWith('initial-')) { 
                     openEditModal(itemIdToEdit);
                 } else if (itemIdToEdit && itemIdToEdit.startsWith('initial-')) { 
-                    const currentYoutubeId = playableItemElement.dataset.youtubeId;
-                    const newYoutubeUrl = prompt("[데모 아이템 임시수정] 새로운 유튜브 영상 URL을 입력하세요:", `https://www.youtube.com/watch?v=${currentYoutubeId}`);
-                    if (newYoutubeUrl) {
-                        const newYoutubeId = getYouTubeId(newYoutubeUrl);
-                        if (newYoutubeId) {
-                            playableItemElement.dataset.youtubeId = newYoutubeId;
-                            const imgElement = playableItemElement.querySelector('img');
-                            if (imgElement) imgElement.src = getYouTubeThumbnailUrl(newYoutubeId);
-                            showToast('[임시] 데모 링크가 수정되었습니다. 새로고침하면 원래대로 돌아갑니다.');
-                        } else {
-                           showToast("유효하지 않은 유튜브 URL입니다.");
-                        }
-                    }
+                    // 데모 아이템 수정은 현재 UI에서 직접 수정 불가 (필요시 별도 관리자 기능 추가)
+                    showToast('데모 콘텐츠는 이 방식으로 수정할 수 없습니다.');
                 }
             }
 
@@ -1104,12 +1139,13 @@
                     });
                     saveData(PLAYLISTS_KEY, playlists);
                     
-                    allContentData = updatedUploads; // 관리자 모드이므로 allContentData 업데이트
+                    allContentData = updatedUploads; 
                     renderPageContent();
 
                     showToast('콘텐츠가 삭제되었습니다.');
                 } else if (itemIdToDelete && itemIdToDelete.startsWith('initial-')) { 
-                     playableItemElement.remove(); // 데모 아이템은 UI에서만 제거
+                     // 데모 아이템은 UI에서만 임시 제거 (새로고침 시 복구)
+                     playableItemElement.remove();
                      showToast('데모 콘텐츠가 UI에서 제거되었습니다. 새로고침하면 복구됩니다.');
                 }
             }
@@ -1126,10 +1162,15 @@
                         currentContentSource[itemIndex].isRecommended = !currentContentSource[itemIndex].isRecommended; 
                         if(isAdminMode) {
                              saveData(USER_UPLOADS_KEY, currentContentSource);
-                             allContentData = currentContentSource;
+                             allContentData = currentContentSource; // 관리자 모드에서는 allContentData도 갱신
                         } else {
-                             const likedItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
-                             if(likedItemInAllData) likedItemInAllData.isRecommended = currentContentSource[itemIndex].isRecommended;
+                            // 사용자 모드: isRecommended 상태를 allContentData (메모리)에만 반영.
+                            // 이 변경은 페이지 새로고침 시 JSON 파일에서 다시 로드되므로 사라짐.
+                            // 영구적인 사용자별 추천은 별도 localStorage 키 또는 서버 연동 필요.
+                            const targetItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
+                            if (targetItemInAllData) {
+                                targetItemInAllData.isRecommended = currentContentSource[itemIndex].isRecommended;
+                            }
                         }
                         renderPageContent();
                         showToast(currentContentSource[itemIndex].isRecommended ? '추천 목록에 추가되었습니다.' : '추천 목록에서 제거되었습니다.');
