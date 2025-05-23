@@ -85,8 +85,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.8rem; font-weight: 500; } /* 모바일 폰트 크기 조정 */
-        .item-artist, .item-tags { font-size: 0.7rem; } /* 모바일 폰트 크기 조정 */
+        .item-title { font-size: 0.8rem; font-weight: 500; } 
+        .item-artist, .item-tags { font-size: 0.7rem; } 
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -122,21 +122,6 @@
         #mobileSidebarOverlay.hidden {
             display: none;
         }
-        /* 썸네일 비율 유지를 위한 스타일 */
-        .thumbnail-aspect-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 150%; /* 2:3 ratio (6:9) -> height will be 1.5 times the width */
-            overflow: hidden;
-            border-radius: 0.375rem; /* rounded-md */
-        }
-        .thumbnail-aspect-container img {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 이미지가 비율을 유지하며 컨테이너를 채움 */
-        }
-
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -217,11 +202,7 @@
                 <button id="mobileMenuButton" class="text-gray-300 hover:text-white md:hidden mr-3">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <div class="relative w-full max-w-xs sm:max-w-md"> 
-                    <input type="search" id="searchInput" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
-                    <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-base"></i>
-                </div>
-                <div class="flex items-center space-x-2 sm:space-x-4 ml-auto">
+                <div class="flex-grow"></div> <div class="flex items-center space-x-2 sm:space-x-4">
                     <button class="p-2 rounded-full hover:bg-purple-700/30">
                         <i class="fas fa-bell text-lg sm:text-xl"></i>
                     </button>
@@ -280,7 +261,8 @@
                         <option value="긴장감">긴장감</option> 
                         <option value="편안함">편안함</option>
                     </select>
-                    </div>
+                    <button id="discoverSearchButton" class="px-6 py-3 neon-accent-bg text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm w-full sm:w-auto">탐색하기</button>
+                </div>
                 <div id="discoverContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     <p id="discoverPlaceholder" class="text-gray-400 col-span-full text-sm">탐색할 콘텐츠가 로드 중이거나 없습니다.</p>
                 </div>
@@ -698,18 +680,15 @@
             let currentRightOffset = 0.3; 
             const offsetIncrement = 1.5;
 
-            // 1. Add to Playlist
             actionButtons.push(`<i class="fas fa-list-ul item-action-icon add-to-playlist-icon" title="플레이리스트에 추가" style="right: ${currentRightOffset}rem; top: 0.3rem;"></i>`);
             currentRightOffset += offsetIncrement;
 
-            // 2. Like Button
             const isLiked = isItemLiked(itemData.itemId);
             const likeIconClass = isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart';
             const likeTitle = isLiked ? '좋아요 취소' : '좋아요';
             actionButtons.push(`<i class="${likeIconClass} item-action-icon like-item-button" title="${likeTitle}" style="right: ${currentRightOffset}rem; top: 0.3rem;"></i>`);
             currentRightOffset += offsetIncrement;
             
-            // 3. Recommend Checkbox 
             if (currentContainer && currentContainer.id === 'newUploadsContainer' && !itemData.isInitialDemo) {
                 let starIconClass = itemData.isRecommended ? 'fas fa-star' : 'far fa-star';
                 let starColorClass = itemData.isRecommended ? 'recommended' : '';
@@ -718,7 +697,6 @@
                 currentRightOffset += offsetIncrement;
             }
 
-            // 4. Edit and Delete Buttons 
             if (isAdminMode && !isChartItem && !isRecommendedItem) {
                 actionButtons.push(`<i class="fas fa-pencil-alt item-action-icon edit-youtube-link" title="콘텐츠 정보 수정" style="right: ${currentRightOffset}rem;"></i>`);
                 currentRightOffset += offsetIncrement;
@@ -726,9 +704,8 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            const imageContainerClass = "thumbnail-aspect-container mb-2"; // 6:9 비율 컨테이너
-            const imageClass = ""; // 내부 이미지는 컨테이너에 맞춤
-
+            // 모바일: h-36 (9rem), PC: md:h-28 (7rem)
+            const imageClass = "h-36 md:h-28"; 
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -737,8 +714,8 @@
 
             return `
                 ${actionButtonsHTML}
-                <div class="${imageContainerClass}">
-                    <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
+                <div class="w-full ${isChartItem ? 'aspect-[2/3]' : 'aspect-[2/3] md:aspect-auto'} overflow-hidden rounded-md mb-2"> {/* 차트 아이템은 항상 2:3, 나머지는 PC에서 자동 높이 */}
+                    <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full ${imageClass} object-cover" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
                 </div>
                 <h4 class="item-title truncate">${itemData.title}</h4>
                 <div class="item-artist-wrapper">
@@ -754,9 +731,8 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
-            // AION 차트 아이템에 대한 모바일 가로 스크롤 너비 조정
             if (isChartItem && container.id === 'aionChartContainer') { 
-                itemClasses += ' w-3/5 sm:w-auto flex-none'; // 모바일에서 너비 조정 (w-2/3 -> w-3/4)
+                itemClasses += ' w-3/5 sm:w-auto flex-none'; 
             }
             
             newItemDiv.className = itemClasses;
@@ -787,8 +763,8 @@
         }
         
         // --- 메인 콘텐츠 로딩 및 렌더링 함수 ---
-        function renderPageContent(contentToRender = allContentData, targetContainerId = null) {
-            if (targetContainerId) { // 특정 컨테이너만 업데이트 (검색/필터용)
+        function renderPageContent(contentToRender = allContentData, targetContainerId = null, isSearchResult = false) {
+            if (targetContainerId) { 
                 const container = document.getElementById(targetContainerId);
                 const placeholder = document.getElementById(`${targetContainerId}Placeholder`);
                 if (container) {
@@ -799,14 +775,16 @@
                     } else {
                         if(placeholder && !container.contains(placeholder)) container.appendChild(placeholder);
                         if(placeholder) placeholder.classList.remove('hidden');
-                        if(placeholder && targetContainerId === 'discoverContainer') placeholder.textContent = "검색 또는 필터 결과가 없습니다.";
+                        if(placeholder && (targetContainerId === 'discoverContainer' || isSearchResult)) {
+                             placeholder.textContent = isSearchResult ? "검색 결과가 없습니다." : "선택한 조건에 맞는 콘텐츠가 없습니다.";
+                        }
                     }
                 }
-            } else { // 전체 페이지 렌더링
+            } else { 
                 renderNewUploadsSection(contentToRender);
                 renderAionChart(contentToRender);
                 renderRecommendedMusicSection(contentToRender);
-                renderDiscoverItems(); // 디스커버는 자체 데모 또는 초기 데이터로
+                renderDiscoverItems(); 
                 
                 renderMyPlaylists();
                 renderSubscribedArtists();
@@ -876,7 +854,7 @@
             if (!discoverContainer) return;
             clearContainer(discoverContainer, discoverPlaceholder);
             
-            const itemsToRender = filteredItems !== null ? filteredItems : [ // 검색/필터 결과가 있으면 그것을, 없으면 초기 데모
+            const itemsToRender = filteredItems !== null ? filteredItems : [ 
                  {itemId: "initial-discover-1", youtubeId: "rB03Qut395k", title: "AI 재즈 스케이프", aiMusicArtist: "Neural Notes", aiTool: "기타/직접입력", tags: "#Jazz,#AIModelY", genre: "재즈", mood: "차분함", views: 75, isInitialDemo: true},
             ];
 
@@ -1118,7 +1096,6 @@
                 if (itemIdToEdit && !itemIdToEdit.startsWith('initial-')) { 
                     openEditModal(itemIdToEdit);
                 } else if (itemIdToEdit && itemIdToEdit.startsWith('initial-')) { 
-                    // 데모 아이템 수정은 현재 UI에서 직접 수정 불가 (필요시 별도 관리자 기능 추가)
                     showToast('데모 콘텐츠는 이 방식으로 수정할 수 없습니다.');
                 }
             }
@@ -1144,8 +1121,7 @@
 
                     showToast('콘텐츠가 삭제되었습니다.');
                 } else if (itemIdToDelete && itemIdToDelete.startsWith('initial-')) { 
-                     // 데모 아이템은 UI에서만 임시 제거 (새로고침 시 복구)
-                     playableItemElement.remove();
+                     playableItemElement.remove(); 
                      showToast('데모 콘텐츠가 UI에서 제거되었습니다. 새로고침하면 복구됩니다.');
                 }
             }
@@ -1162,15 +1138,12 @@
                         currentContentSource[itemIndex].isRecommended = !currentContentSource[itemIndex].isRecommended; 
                         if(isAdminMode) {
                              saveData(USER_UPLOADS_KEY, currentContentSource);
-                             allContentData = currentContentSource; // 관리자 모드에서는 allContentData도 갱신
+                             allContentData = currentContentSource; 
                         } else {
-                            // 사용자 모드: isRecommended 상태를 allContentData (메모리)에만 반영.
-                            // 이 변경은 페이지 새로고침 시 JSON 파일에서 다시 로드되므로 사라짐.
-                            // 영구적인 사용자별 추천은 별도 localStorage 키 또는 서버 연동 필요.
-                            const targetItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
-                            if (targetItemInAllData) {
+                             const targetItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
+                             if (targetItemInAllData) { // Ensure item exists in allContentData before modifying
                                 targetItemInAllData.isRecommended = currentContentSource[itemIndex].isRecommended;
-                            }
+                             }
                         }
                         renderPageContent();
                         showToast(currentContentSource[itemIndex].isRecommended ? '추천 목록에 추가되었습니다.' : '추천 목록에서 제거되었습니다.');
