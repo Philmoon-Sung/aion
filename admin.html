@@ -93,8 +93,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.875rem; font-weight: 500; }
-        .item-artist, .item-tags { font-size: 0.75rem; }
+        .item-title { font-size: 0.875rem; font-weight: 500; } /* 복원된 폰트 크기 */
+        .item-artist, .item-tags { font-size: 0.75rem; } /* 복원된 폰트 크기 */
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -130,10 +130,6 @@
         #mobileSidebarOverlay.hidden {
             display: none;
         }
-        .thumbnail-image {
-            width: 100%;
-            object-fit: cover;
-        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -153,10 +149,11 @@
                 <i class="fas fa-list-alt fa-fw text-xl sidebar-icon"></i> 
                 <span class="text-sm">플레이 리스트</span> 
             </a>
-            <div id="exportContentButtonContainerSidebar" style="display: none;"> <button id="exportContentButtonSidebar" class="w-full flex items-center space-x-3 p-3 rounded-lg text-sm text-gray-300 hover:bg-blue-700/30 transition-colors duration-200">
-                   <i class="fas fa-file-export fa-fw text-xl sidebar-icon"></i>
-                   <span class="text-sm">JSON 내보내기</span>
-               </button>
+            <div id="exportContentButtonContainerSidebar" style="display: none;"> 
+                 <button id="exportContentButtonSidebar" class="w-full flex items-center space-x-3 p-3 rounded-lg text-sm text-gray-300 hover:bg-blue-700/30 transition-colors duration-200">
+                    <i class="fas fa-file-export fa-fw text-xl sidebar-icon"></i>
+                    <span class="text-sm">JSON 내보내기</span>
+                </button>
            </div>
             <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
                 <i class="fas fa-upload fa-fw text-xl sidebar-icon"></i>
@@ -191,7 +188,8 @@
                 <i class="fas fa-list-alt fa-fw text-lg sidebar-icon"></i> 
                 <span class="text-sm">플레이 리스트</span>
             </a>
-             <div id="exportContentButtonContainerMobileSidebar" style="display: none;"> <button id="exportContentButtonMobileSidebar" class="w-full flex items-center space-x-3 p-3 rounded-lg text-sm text-gray-300 hover:bg-blue-700/30 transition-colors duration-200">
+             <div id="exportContentButtonContainerMobileSidebar" style="display: none;"> 
+                 <button id="exportContentButtonMobileSidebar" class="w-full flex items-center space-x-3 p-3 rounded-lg text-sm text-gray-300 hover:bg-blue-700/30 transition-colors duration-200">
                     <i class="fas fa-file-export fa-fw text-lg sidebar-icon"></i>
                     <span class="text-sm">JSON 내보내기</span>
                 </button>
@@ -231,8 +229,8 @@
                 <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">AION 홈</h2>
                 <div class="mb-8 sm:mb-10">
                     <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-xs sm:text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
-                    <div id="aionChartContainer" class="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-3">
-                        <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
+                    <div id="aionChartContainer" class="grid grid-cols-2 gap-2 sm:flex sm:overflow-x-auto sm:space-x-3 sm:pb-3 sm:horizontal-scroll md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-3 md:space-x-0 md:pb-0">
+                        <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm flex-none whitespace-nowrap">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
                     </div>
                 </div>
                 <div class="mb-8 sm:mb-10">
@@ -679,7 +677,7 @@
             }
             actionButtonsHTML += `</div>`;
             
-            const imageClass = "h-20 sm:h-24 md:h-28"; // 썸네일 높이 조정 (모바일 h-20)
+            const imageClass = "h-28"; // 썸네일 높이 복원
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -688,7 +686,7 @@
 
             return `
                 ${actionButtonsHTML}
-                <div class="thumbnail-image-container mb-1"> 
+                <div class="thumbnail-image-container mb-2"> {/* 하단 마진 mb-2로 복원 */}
                     <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image ${imageClass}" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
                 </div>
                 <h4 class="item-title truncate">${itemData.title}</h4>
@@ -706,7 +704,7 @@
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
             if (isChartItem && container.id === 'aionChartContainer') { 
-                 itemClasses += ' w-3/5 sm:w-auto flex-none'; 
+                 itemClasses += ' w-3/4 sm:w-auto flex-none'; 
             }
             
             newItemDiv.className = itemClasses;
@@ -743,11 +741,12 @@
                 renderNewUploadsSection(contentToRender);
                 renderAionChart(contentToRender);
                 renderRecommendedMusicSection(contentToRender);
+                // renderDiscoverItems(); // 탐색 기능 제거됨
+                
+                renderMyPlaylists();
+                renderSubscribedArtists();
+                renderLikedSongs();
             }
-            // 사용자별 데이터는 항상 localStorage에서 로드
-            renderMyPlaylists();
-            renderSubscribedArtists();
-            renderLikedSongs();
         }
         
         function renderNewUploadsSection(items) {
