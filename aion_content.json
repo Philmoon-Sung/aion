@@ -250,5 +250,19 @@
     "views": 2,
     "isRecommended": false,
     "isInitialDemo": false
+  },
+  {
+    "itemId": "item-1747966504561-vrxo6fnzh",
+    "youtubeId": "jfeMT3lQJ6I",
+    "title": "따듯했던 너의 약속",
+    "aiMusicArtist": "성필문",
+    "aiTool": "Suno AI",
+    "isInstrumental": false,
+    "genre": "발라드",
+    "mood": "차분함",
+    "tags": "",
+    "views": 0,
+    "isRecommended": false,
+    "isInitialDemo": false
   }
 ]
