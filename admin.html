@@ -85,8 +85,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.8rem; font-weight: 500; } 
-        .item-artist, .item-tags { font-size: 0.7rem; } 
+        .item-title { font-size: 0.875rem; font-weight: 500; }
+        .item-artist, .item-tags { font-size: 0.75rem; }
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -202,7 +202,11 @@
                 <button id="mobileMenuButton" class="text-gray-300 hover:text-white md:hidden mr-3">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <div class="flex-grow"></div> <div class="flex items-center space-x-2 sm:space-x-4">
+                <div class="relative w-full max-w-xs sm:max-w-md"> 
+                    <input type="search" id="searchInput" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
+                    <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-base"></i>
+                </div>
+                <div class="flex items-center space-x-2 sm:space-x-4 ml-auto">
                     <button class="p-2 rounded-full hover:bg-purple-700/30">
                         <i class="fas fa-bell text-lg sm:text-xl"></i>
                     </button>
@@ -261,8 +265,7 @@
                         <option value="긴장감">긴장감</option> 
                         <option value="편안함">편안함</option>
                     </select>
-                    <button id="discoverSearchButton" class="px-6 py-3 neon-accent-bg text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm w-full sm:w-auto">탐색하기</button>
-                </div>
+                    </div>
                 <div id="discoverContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     <p id="discoverPlaceholder" class="text-gray-400 col-span-full text-sm">탐색할 콘텐츠가 로드 중이거나 없습니다.</p>
                 </div>
@@ -704,7 +707,7 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            // 모바일: h-36 (9rem), PC: md:h-28 (7rem)
+            // 모바일: h-36, PC: md:h-28
             const imageClass = "h-36 md:h-28"; 
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
@@ -714,7 +717,7 @@
 
             return `
                 ${actionButtonsHTML}
-                <div class="w-full ${isChartItem ? 'aspect-[2/3]' : 'aspect-[2/3] md:aspect-auto'} overflow-hidden rounded-md mb-2"> {/* 차트 아이템은 항상 2:3, 나머지는 PC에서 자동 높이 */}
+                <div class="w-full ${isChartItem ? 'aspect-[2/3]' : 'aspect-[2/3] md:aspect-auto'} overflow-hidden rounded-md mb-2"> 
                     <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="w-full ${imageClass} object-cover" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
                 </div>
                 <h4 class="item-title truncate">${itemData.title}</h4>
@@ -1141,7 +1144,7 @@
                              allContentData = currentContentSource; 
                         } else {
                              const targetItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
-                             if (targetItemInAllData) { // Ensure item exists in allContentData before modifying
+                             if (targetItemInAllData) { 
                                 targetItemInAllData.isRecommended = currentContentSource[itemIndex].isRecommended;
                              }
                         }
