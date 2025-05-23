@@ -12,6 +12,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #0a031a; 
             color: #e0e0e0; 
+            overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
         }
         .neon-accent { color: #8A2BE2; }
         .neon-accent-bg { background-color: #8A2BE2; }
@@ -114,54 +115,103 @@
             font-size: 1.5rem; 
             color: rgba(224, 224, 224, 0.7); 
         }
+
+        /* 모바일 사이드바 스타일 */
+        #mobileSidebar.hidden {
+            transform: translateX(-100%);
+        }
+        #mobileSidebarOverlay.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-16 md:w-64 glassmorphism p-4 space-y-8 flex flex-col items-center md:items-start fixed inset-y-0 left-0 z-30"> {/* 모바일 사이드바 너비 w-16으로 축소 */}
-        <div class="flex items-center justify-center md:justify-start space-x-2 mb-10">
-            <svg class="h-8 w-8 md:h-10 md:w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+    <aside id="desktopSidebar" class="hidden md:flex w-64 glassmorphism p-4 space-y-8 flex-col items-start fixed inset-y-0 left-0 z-30">
+        <div class="flex items-center justify-start space-x-2 mb-10">
+            <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
-            <h1 class="text-xl md:text-2xl font-bold hidden md:block">AION</h1>
+            <h1 class="text-2xl font-bold">AION</h1>
         </div>
         <nav class="space-y-4 flex-grow w-full">
-            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
-                <i class="fas fa-home fa-fw text-lg md:text-xl sidebar-icon"></i>
-                <span class="hidden md:inline text-sm">홈</span>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
+                <i class="fas fa-home fa-fw text-xl sidebar-icon"></i>
+                <span class="text-sm">홈</span>
             </a>
-            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
-                <i class="fas fa-compass fa-fw text-lg md:text-xl sidebar-icon"></i>
-                <span class="hidden md:inline text-sm">탐색</span>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
+                <i class="fas fa-compass fa-fw text-xl sidebar-icon"></i>
+                <span class="text-sm">탐색</span>
             </a>
-            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
-                <i class="fas fa-book fa-fw text-lg md:text-xl sidebar-icon"></i>
-                <span class="hidden md:inline text-sm">보관함</span>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
+                <i class="fas fa-book fa-fw text-xl sidebar-icon"></i>
+                <span class="text-sm">보관함</span>
             </a>
-            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
-                <i class="fas fa-upload fa-fw text-lg md:text-xl sidebar-icon"></i>
-                <span class="hidden md:inline text-sm">업로드</span>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
+                <i class="fas fa-upload fa-fw text-xl sidebar-icon"></i>
+                <span class="text-sm">업로드</span>
             </a>
         </nav>
         <div class="mt-auto w-full">
-             <a href="#" class="flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
-                <i class="fas fa-user-circle fa-fw text-lg md:text-xl sidebar-icon"></i>
-                <span class="hidden md:inline text-sm">프로필</span>
+             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
+                <i class="fas fa-user-circle fa-fw text-xl sidebar-icon"></i>
+                <span class="text-sm">프로필</span>
             </a>
         </div>
     </aside>
 
-    <main class="flex-1 ml-16 md:ml-64 h-screen flex flex-col"> {/* 모바일 왼쪽 마진 w-16에 맞춤 */}
+    <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+    <aside id="mobileSidebar" class="fixed inset-y-0 left-0 w-64 glassmorphism p-4 space-y-8 flex flex-col items-start z-40 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+        <div class="flex items-center justify-between w-full mb-6">
+            <div class="flex items-center space-x-2">
+                <svg class="h-8 w-8 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/> </svg>
+                <h1 class="text-xl font-bold">AION</h1>
+            </div>
+            <button id="closeMobileSidebarButton" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <nav class="space-y-3 flex-grow w-full">
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
+                <i class="fas fa-home fa-fw text-lg sidebar-icon"></i>
+                <span class="text-sm">홈</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
+                <i class="fas fa-compass fa-fw text-lg sidebar-icon"></i>
+                <span class="text-sm">탐색</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
+                <i class="fas fa-book fa-fw text-lg sidebar-icon"></i>
+                <span class="text-sm">보관함</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
+                <i class="fas fa-upload fa-fw text-lg sidebar-icon"></i>
+                <span class="text-sm">업로드</span>
+            </a>
+        </nav>
+        <div class="mt-auto w-full">
+             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
+                <i class="fas fa-user-circle fa-fw text-lg sidebar-icon"></i>
+                <span class="text-sm">프로필</span>
+            </a>
+        </div>
+    </aside>
+
+
+    <main class="flex-1 md:ml-64 h-screen flex flex-col"> {/* 모바일에서는 ml-0, JS로 토글 */}
         <header class="p-4 glassmorphism sticky top-0 z-20 flex-shrink-0">
             <div class="flex items-center justify-between">
-                <div class="relative w-full max-w-xs sm:max-w-md"> {/* 모바일 검색창 너비 조정 */}
+                <button id="mobileMenuButton" class="text-gray-300 hover:text-white md:hidden mr-3">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="relative w-full max-w-xs sm:max-w-md"> 
                     <input type="search" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
                     <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-base"></i>
                 </div>
-                <div class="flex items-center space-x-2 sm:space-x-4">
+                <div class="flex items-center space-x-2 sm:space-x-4 ml-auto"> {/* ml-auto 추가 */}
                     <button class="p-2 rounded-full hover:bg-purple-700/30">
                         <i class="fas fa-bell text-lg sm:text-xl"></i>
                     </button>
-                    <img src="https://placehold.co/32x32/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer"> {/* 모바일 아바타 크기 조정 */}
+                    <img src="https://placehold.co/32x32/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer"> 
                 </div>
             </div>
         </header>
@@ -451,37 +501,103 @@
         const contentSections = document.querySelectorAll('.content-section');
         const activeNavClass = 'neon-accent-bg';
         const inactiveNavClass = 'hover:bg-purple-700/30';
+        const desktopSidebar = document.getElementById('desktopSidebar');
+        const mobileSidebar = document.getElementById('mobileSidebar');
+        const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const closeMobileSidebarButton = document.getElementById('closeMobileSidebarButton');
+        const mainContentArea = document.querySelector('main');
+
 
         document.getElementById('home').classList.add('active');
-        const homeNavItem = document.querySelector('.nav-item[data-section="home"]');
-        if (homeNavItem) {
-            homeNavItem.classList.add(activeNavClass);
-            homeNavItem.classList.remove(inactiveNavClass);
+        const homeNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="home"]');
+        const homeNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="home"]');
+
+        if (homeNavItemDesktop) {
+            homeNavItemDesktop.classList.add(activeNavClass);
+            homeNavItemDesktop.classList.remove(inactiveNavClass);
+        }
+         if (homeNavItemMobile) {
+            homeNavItemMobile.classList.add(activeNavClass);
+            homeNavItemMobile.classList.remove(inactiveNavClass);
         }
 
-        navItems.forEach(item => {
+
+        function switchSection(sectionId) {
+            contentSections.forEach(section => section.classList.remove('active'));
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) targetSection.classList.add('active');
+
+            // 데스크탑 사이드바 활성 상태 업데이트
+            desktopSidebar.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove(activeNavClass);
+                nav.classList.add(inactiveNavClass);
+                if (nav.dataset.section === sectionId) {
+                    nav.classList.add(activeNavClass);
+                    nav.classList.remove(inactiveNavClass);
+                }
+            });
+            // 모바일 사이드바 활성 상태 업데이트
+            mobileSidebar.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove(activeNavClass);
+                nav.classList.add(inactiveNavClass);
+                if (nav.dataset.section === sectionId) {
+                    nav.classList.add(activeNavClass);
+                    nav.classList.remove(inactiveNavClass);
+                }
+            });
+        }
+        
+        desktopSidebar.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const sectionId = item.dataset.section;
-                contentSections.forEach(section => section.classList.remove('active'));
-                navItems.forEach(nav => {
-                    nav.classList.remove(activeNavClass);
-                    nav.classList.add(inactiveNavClass);
-                });
-                const targetSection = document.getElementById(sectionId);
-                if (targetSection) targetSection.classList.add('active');
-                item.classList.add(activeNavClass);
-                item.classList.remove(inactiveNavClass);
+                switchSection(item.dataset.section);
             });
         });
+        mobileSidebar.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchSection(item.dataset.section);
+                closeMobileSidebar(); // 모바일 메뉴 아이템 클릭 시 사이드바 닫기
+            });
+        });
+        
+        function openMobileSidebar() {
+            if (mobileSidebar && mobileSidebarOverlay && mainContentArea) {
+                mobileSidebar.classList.remove('-translate-x-full');
+                mobileSidebarOverlay.classList.remove('hidden');
+                // mainContentArea.classList.add('ml-64'); // 메인 콘텐츠 밀어내기 (선택 사항)
+            }
+        }
+
+        function closeMobileSidebar() {
+            if (mobileSidebar && mobileSidebarOverlay && mainContentArea) {
+                mobileSidebar.classList.add('-translate-x-full');
+                mobileSidebarOverlay.classList.add('hidden');
+                // mainContentArea.classList.remove('ml-64'); // 메인 콘텐츠 원위치 (선택 사항)
+            }
+        }
+
+        if (mobileMenuButton) {
+            mobileMenuButton.addEventListener('click', openMobileSidebar);
+        }
+        if (closeMobileSidebarButton) {
+            closeMobileSidebarButton.addEventListener('click', closeMobileSidebar);
+        }
+        if (mobileSidebarOverlay) {
+            mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
+        }
+
 
         const uploadSection = document.getElementById('upload');
-        const uploadNavItem = document.querySelector('.nav-item[data-section="upload"]');
+        const uploadNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="upload"]');
+        const uploadNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="upload"]');
         const exportContentButtonContainer = document.getElementById('exportContentButtonContainer');
 
         if (!isAdminMode) {
             if (uploadSection) uploadSection.style.display = 'none';
-            if (uploadNavItem) uploadNavItem.style.display = 'none';
+            if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
+            if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
             if (exportContentButtonContainer) exportContentButtonContainer.style.display = 'none';
         } else {
             if (exportContentButtonContainer) exportContentButtonContainer.style.display = 'block'; 
@@ -599,7 +715,7 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            const imageClass = "h-20"; // 모바일 썸네일 높이 축소
+            const imageClass = "h-20"; 
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -624,8 +740,8 @@
             let itemClasses = 'youtube-playable glassmorphism p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer';
 
             // AION 차트 아이템에 대한 모바일 가로 스크롤 너비 조정
-            if (isChartItem) { 
-                itemClasses += ' w-2/3 sm:w-4/5 md:w-auto flex-none'; // 모바일에서 너비 조정, sm 이상에서는 자동
+            if (isChartItem && container.id === 'aionChartContainer') { 
+                itemClasses += ' w-2/3 sm:w-auto flex-none'; // 모바일에서 너비 조정, sm 이상에서는 자동
             }
             
             newItemDiv.className = itemClasses;
