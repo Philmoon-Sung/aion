@@ -93,13 +93,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.75rem; font-weight: 500; line-height: 1.2; } 
-        .item-artist, .item-tags { font-size: 0.65rem; line-height: 1.2; } 
-        @media (min-width: 768px) { 
-            .item-title { font-size: 0.875rem; } 
-            .item-artist, .item-tags { font-size: 0.75rem; } 
-            .youtube-playable { padding-top: 0; } 
-        }
+        .item-title { font-size: 0.875rem; font-weight: 500; } 
+        .item-artist, .item-tags { font-size: 0.75rem; } 
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -144,15 +139,18 @@
             width: 100%;
             object-fit: cover;
         }
+         @media (min-width: 768px) { 
+            .youtube-playable { padding-top: 0; } 
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <aside id="desktopSidebar" class="hidden md:flex w-64 glassmorphism p-4 space-y-8 flex-col items-start fixed inset-y-0 left-0 z-30">
-        <div class="flex items-center justify-start space-x-3 mb-10"> {/* space-x-3으로 조정 */}
-            <svg class="h-12 w-12 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        <div class="flex items-center justify-start space-x-3 mb-10"> 
+            <svg class="h-14 w-14 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
-            <h1 class="text-3xl font-bold">AION</h1> {/* 폰트 크기 증가 */}
+            <h1 class="text-4xl font-bold">AION</h1> 
         </div>
         <nav class="space-y-4 flex-grow w-full">
             <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
@@ -185,9 +183,9 @@
     <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
     <aside id="mobileSidebar" class="fixed inset-y-0 left-0 w-64 glassmorphism p-4 space-y-8 flex flex-col items-start z-40 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
         <div class="flex items-center justify-between w-full mb-6">
-            <div class="flex items-center space-x-3"> {/* space-x-3으로 조정 */}
+            <div class="flex items-center space-x-3"> 
                 <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/> </svg>
-                <h1 class="text-2xl font-bold">AION</h1> {/* 폰트 크기 증가 */}
+                <h1 class="text-2xl font-bold">AION</h1> 
             </div>
             <button id="closeMobileSidebarButton" class="text-gray-400 hover:text-white">
                 <i class="fas fa-times text-2xl"></i>
@@ -1491,7 +1489,7 @@
                  showToast('유효한 아티스트 이름이 아닙니다.');
                 return;
             }
-            let subscribedArtists = getSubscribedArtists();
+            let subscribedArtists = getStoredData(SUBSCRIBED_ARTISTS_KEY);
             const isSubscribed = subscribedArtists.includes(artistName);
 
             if (isSubscribed) {
@@ -1554,7 +1552,7 @@
         }
         function toggleLikeItem(itemId) {
             if (!itemId) return;
-            let likedItems = getLikedItems();
+            let likedItems = getStoredData(LIKED_ITEMS_KEY);
             const itemIndex = likedItems.indexOf(itemId);
             if (itemIndex > -1) {
                 likedItems.splice(itemIndex, 1);
@@ -1653,6 +1651,7 @@
                 showToast('내보낼 콘텐츠가 없습니다.');
                 return;
             }
+            // 내보낼 때 isRecommended, views 값도 포함하도록 수정
             const exportData = contentToExport.map(item => ({
                 itemId: item.itemId,
                 youtubeId: item.youtubeId,
@@ -1698,14 +1697,12 @@
                 renderPageContent();
             } else {
                 if (uploadSection) uploadSection.style.display = 'none';
-                if (uploadNavItemDesktop) { // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음
-                    const discoverNavItem = desktopSidebar.querySelector('.nav-item[data-section="discover"]');
-                    if(discoverNavItem) discoverNavItem.style.display = 'none';
-                }
-                if (uploadNavItemMobile) { // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음
-                     const discoverNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="discover"]');
-                    if(discoverNavItemMobile) discoverNavItemMobile.style.display = 'none';
-                }
+                // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음 (안전하게 확인)
+                const discoverNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="discover"]');
+                if(discoverNavItemDesktop) discoverNavItemDesktop.style.display = 'none';
+                const discoverNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="discover"]');
+                if(discoverNavItemMobile) discoverNavItemMobile.style.display = 'none';
+
                 if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'none';
                 if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'none';
 
