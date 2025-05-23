@@ -93,12 +93,8 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.75rem; font-weight: 500; line-height: 1.2; } 
-        .item-artist, .item-tags { font-size: 0.65rem; line-height: 1.2; } 
-        @media (min-width: 768px) { 
-            .item-title { font-size: 0.875rem; } 
-            .item-artist, .item-tags { font-size: 0.75rem; } 
-        }
+        .item-title { font-size: 0.875rem; font-weight: 500; } /* 복원된 폰트 크기 */
+        .item-artist, .item-tags { font-size: 0.75rem; } /* 복원된 폰트 크기 */
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -572,12 +568,19 @@
         const uploadSection = document.getElementById('upload');
         const uploadNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="upload"]');
         const uploadNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="upload"]');
-        // exportContentButtonContainer는 이 버전에서 사용 안 함
+        const exportContentButtonContainerSidebar = document.getElementById('exportContentButtonContainerSidebar');
+        const exportContentButtonContainerMobileSidebar = document.getElementById('exportContentButtonContainerMobileSidebar');
+
 
         if (!isAdminMode) {
             if (uploadSection) uploadSection.style.display = 'none';
             if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
             if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
+            if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'none';
+            if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'none';
+        } else {
+            if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'block'; 
+            if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'block';
         }
         
         // --- YouTube 관련 함수 ---
@@ -643,8 +646,8 @@
         const aionChartPlaceholder = document.getElementById('aionChartPlaceholder');
         const recommendedMusicContainer = document.getElementById('recommendedMusicContainer');
         const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
-        const discoverContainer = document.getElementById('discoverContainer');
-        const discoverPlaceholder = document.getElementById('discoverPlaceholder');
+        // const discoverContainer = document.getElementById('discoverContainer'); // 탐색 기능 제거됨
+        // const discoverPlaceholder = document.getElementById('discoverPlaceholder'); // 탐색 기능 제거됨
         const myPlaylistsContainer = document.getElementById('myPlaylistsContainer');
         const myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
         const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
@@ -661,35 +664,29 @@
             
             if (isChartItem) tagsHTML += ` <span class="text-yellow-300"><i class="fas fa-eye text-xs"></i> ${itemData.views || 0}</span>`;
 
-            let actionButtons = [];
-            let currentRightOffset = 0.3; 
-            const offsetIncrement = 1.5;
-
-            actionButtons.push(`<i class="fas fa-list-ul item-action-icon add-to-playlist-icon" title="플레이리스트에 추가" style="right: ${currentRightOffset}rem; top: 0.3rem;"></i>`);
-            currentRightOffset += offsetIncrement;
+            let actionButtonsHTML = `<div class="item-action-icon-wrapper">`; // Wrapper 시작
+            
+            actionButtonsHTML += `<i class="fas fa-list-ul item-action-icon add-to-playlist-icon" title="플레이리스트에 추가"></i>`;
 
             const isLiked = isItemLiked(itemData.itemId);
             const likeIconClass = isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart';
             const likeTitle = isLiked ? '좋아요 취소' : '좋아요';
-            actionButtons.push(`<i class="${likeIconClass} item-action-icon like-item-button" title="${likeTitle}" style="right: ${currentRightOffset}rem; top: 0.3rem;"></i>`);
-            currentRightOffset += offsetIncrement;
+            actionButtonsHTML +=`<i class="${likeIconClass} item-action-icon like-item-button" title="${likeTitle}"></i>`;
             
             if (currentContainer && currentContainer.id === 'newUploadsContainer' && !itemData.isInitialDemo) {
                 let starIconClass = itemData.isRecommended ? 'fas fa-star' : 'far fa-star';
                 let starColorClass = itemData.isRecommended ? 'recommended' : '';
                 let recommendTitleText = itemData.isRecommended ? '추천 취소' : '추천 하기';
-                actionButtons.push(`<i class="${starIconClass} item-action-icon recommend-checkbox-icon ${starColorClass}" title="${recommendTitleText}" style="right: ${currentRightOffset}rem;"></i>`);
-                currentRightOffset += offsetIncrement;
+                actionButtonsHTML +=`<i class="${starIconClass} item-action-icon recommend-checkbox-icon ${starColorClass}" title="${recommendTitleText}"></i>`;
             }
 
             if (isAdminMode && !isChartItem && !isRecommendedItem) {
-                actionButtons.push(`<i class="fas fa-pencil-alt item-action-icon edit-youtube-link" title="콘텐츠 정보 수정" style="right: ${currentRightOffset}rem;"></i>`);
-                currentRightOffset += offsetIncrement;
-                actionButtons.push(`<i class="fas fa-trash-alt item-action-icon delete-item-button" title="콘텐츠 삭제" style="right: ${currentRightOffset}rem;"></i>`);
+                actionButtonsHTML +=`<i class="fas fa-pencil-alt item-action-icon edit-youtube-link" title="콘텐츠 정보 수정"></i>`;
+                actionButtonsHTML +=`<i class="fas fa-trash-alt item-action-icon delete-item-button" title="콘텐츠 삭제"></i>`;
             }
+            actionButtonsHTML += `</div>`; // Wrapper 끝
             
-            const actionButtonsHTML = actionButtons.join('');
-            const imageClass = "h-28"; // 이전 상태의 기본 이미지 높이
+            const imageClass = "h-20 sm:h-24 md:h-28"; // 썸네일 높이 조정
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -698,7 +695,7 @@
 
             return `
                 ${actionButtonsHTML}
-                <div class="thumbnail-image-container mb-2"> 
+                <div class="thumbnail-image-container mb-1"> 
                     <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image ${imageClass}" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
                 </div>
                 <h4 class="item-title truncate">${itemData.title}</h4>
@@ -716,7 +713,8 @@
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
             if (isChartItem && container.id === 'aionChartContainer') { 
-                itemClasses += ' w-3/4 sm:w-auto flex-none'; 
+                 // 모바일에서는 grid-cols-2, PC에서는 flex 스크롤 유지
+                itemClasses += ' w-full sm:w-3/5 md:w-auto sm:flex-none';
             }
             
             newItemDiv.className = itemClasses;
@@ -768,7 +766,7 @@
                 renderNewUploadsSection(contentToRender);
                 renderAionChart(contentToRender);
                 renderRecommendedMusicSection(contentToRender);
-                renderDiscoverItems(); 
+                // renderDiscoverItems(); // 탐색 기능 제거됨
                 
                 renderMyPlaylists();
                 renderSubscribedArtists();
@@ -833,31 +831,6 @@
                 aionChartPlaceholder.classList.remove('hidden');
             }
         }
-
-        function renderDiscoverItems(filteredItems = null) { 
-            if (!discoverContainer) return;
-            clearContainer(discoverContainer, discoverPlaceholder);
-            
-            const itemsToRender = filteredItems !== null ? filteredItems : [ 
-                 {itemId: "initial-discover-1", youtubeId: "rB03Qut395k", title: "AI 재즈 스케이프", aiMusicArtist: "Neural Notes", aiTool: "기타/직접입력", tags: "#Jazz,#AIModelY", genre: "재즈", mood: "차분함", views: 75, isInitialDemo: true},
-            ];
-
-            if (itemsToRender.length > 0) {
-                if(discoverPlaceholder) discoverPlaceholder.classList.add('hidden');
-                itemsToRender.forEach(item => {
-                    renderContentItem(item, discoverContainer, false, false, true);
-                });
-            } else {
-                if(discoverPlaceholder && !discoverContainer.contains(discoverPlaceholder)) {
-                    discoverContainer.appendChild(discoverPlaceholder);
-                }
-                if(discoverPlaceholder) {
-                     discoverPlaceholder.classList.remove('hidden');
-                     discoverPlaceholder.textContent = filteredItems !== null ? "검색 또는 필터 결과가 없습니다." : "탐색할 콘텐츠가 로드 중이거나 없습니다.";
-                }
-            }
-        }
-
 
         // --- 업로드 섹션 로직 ---
         const uploadForm = document.getElementById('uploadForm');
