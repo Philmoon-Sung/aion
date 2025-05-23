@@ -93,8 +93,13 @@
             font-size: 0.9rem; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
         .toast-message.show { opacity: 1; }
-        .item-title { font-size: 0.875rem; font-weight: 500; } 
-        .item-artist, .item-tags { font-size: 0.75rem; } 
+        .item-title { font-size: 0.75rem; font-weight: 500; line-height: 1.2; } 
+        .item-artist, .item-tags { font-size: 0.65rem; line-height: 1.2; } 
+        @media (min-width: 768px) { 
+            .item-title { font-size: 0.875rem; } 
+            .item-artist, .item-tags { font-size: 0.75rem; } 
+            .youtube-playable { padding-top: 0; } 
+        }
         .item-artist-wrapper { display: flex; align-items: center; } 
 
 
@@ -138,9 +143,6 @@
         .thumbnail-image {
             width: 100%;
             object-fit: cover;
-        }
-         @media (min-width: 768px) { 
-            .youtube-playable { padding-top: 0; } 
         }
     </style>
 </head>
@@ -688,7 +690,7 @@
             }
             actionButtonsHTML += `</div>`;
             
-            const imageClass = "h-20 sm:h-24 md:h-32"; // PC 썸네일 높이 md:h-32 (약 10% 증가)
+            const imageClass = "h-20 sm:h-24 md:h-32"; 
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -714,9 +716,9 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
-            // AION 차트는 모바일에서 가로 스크롤 유지, 나머지는 grid-cols-2
-            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth < 640 ) { 
-                 itemClasses += ' w-3/5 flex-none'; 
+            // AION 차트 모바일에서는 grid-cols-2, PC에서는 flex 스크롤 유지
+            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth >= 640 ) { // sm 브레이크포인트 이상
+                 itemClasses += ' w-3/5 sm:w-auto flex-none'; 
             }
             
             newItemDiv.className = itemClasses;
@@ -1651,7 +1653,6 @@
                 showToast('내보낼 콘텐츠가 없습니다.');
                 return;
             }
-            // 내보낼 때 isRecommended, views 값도 포함하도록 수정
             const exportData = contentToExport.map(item => ({
                 itemId: item.itemId,
                 youtubeId: item.youtubeId,
