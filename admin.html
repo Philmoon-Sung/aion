@@ -600,7 +600,7 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            const imageClass = "h-28"; 
+            const imageClass = "h-20"; // 썸네일 높이 축소 (기존 h-28)
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
