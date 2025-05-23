@@ -118,71 +118,71 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-20 md:w-64 glassmorphism p-4 space-y-8 flex flex-col items-center md:items-start fixed inset-y-0 left-0 z-30">
+    <aside class="w-16 md:w-64 glassmorphism p-4 space-y-8 flex flex-col items-center md:items-start fixed inset-y-0 left-0 z-30"> {/* 모바일 사이드바 너비 w-16으로 축소 */}
         <div class="flex items-center justify-center md:justify-start space-x-2 mb-10">
-            <svg class="h-10 w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            <svg class="h-8 w-8 md:h-10 md:w-10 neon-accent" viewBox="0 0 24 24" fill="currentColor"> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
-            <h1 class="text-2xl font-bold hidden md:block">AION</h1>
+            <h1 class="text-xl md:text-2xl font-bold hidden md:block">AION</h1>
         </div>
         <nav class="space-y-4 flex-grow w-full">
-            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
-                <i class="fas fa-home fa-fw text-xl sidebar-icon"></i>
-                <span class="hidden md:inline">홈</span>
+            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200 active-nav" data-section="home">
+                <i class="fas fa-home fa-fw text-lg md:text-xl sidebar-icon"></i>
+                <span class="hidden md:inline text-sm">홈</span>
             </a>
-            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
-                <i class="fas fa-compass fa-fw text-xl sidebar-icon"></i>
-                <span class="hidden md:inline">탐색</span>
+            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="discover">
+                <i class="fas fa-compass fa-fw text-lg md:text-xl sidebar-icon"></i>
+                <span class="hidden md:inline text-sm">탐색</span>
             </a>
-            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
-                <i class="fas fa-book fa-fw text-xl sidebar-icon"></i>
-                <span class="hidden md:inline">보관함</span>
+            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="library">
+                <i class="fas fa-book fa-fw text-lg md:text-xl sidebar-icon"></i>
+                <span class="hidden md:inline text-sm">보관함</span>
             </a>
-            <a href="#" class="nav-item flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
-                <i class="fas fa-upload fa-fw text-xl sidebar-icon"></i>
-                <span class="hidden md:inline">업로드 (창작자)</span>
+            <a href="#" class="nav-item flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="upload">
+                <i class="fas fa-upload fa-fw text-lg md:text-xl sidebar-icon"></i>
+                <span class="hidden md:inline text-sm">업로드</span>
             </a>
         </nav>
         <div class="mt-auto w-full">
-             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
-                <i class="fas fa-user-circle fa-fw text-xl sidebar-icon"></i>
-                <span class="hidden md:inline">프로필</span>
+             <a href="#" class="flex items-center justify-center md:justify-start space-x-0 md:space-x-3 p-3 rounded-lg hover:bg-purple-700/30 transition-colors duration-200" data-section="profile">
+                <i class="fas fa-user-circle fa-fw text-lg md:text-xl sidebar-icon"></i>
+                <span class="hidden md:inline text-sm">프로필</span>
             </a>
         </div>
     </aside>
 
-    <main class="flex-1 ml-20 md:ml-64 h-screen flex flex-col">
+    <main class="flex-1 ml-16 md:ml-64 h-screen flex flex-col"> {/* 모바일 왼쪽 마진 w-16에 맞춤 */}
         <header class="p-4 glassmorphism sticky top-0 z-20 flex-shrink-0">
             <div class="flex items-center justify-between">
-                <div class="relative w-full max-w-md">
-                    <input type="search" placeholder="AI 음악, 아티스트, 프롬프트 검색..." class="w-full p-3 pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <div class="relative w-full max-w-xs sm:max-w-md"> {/* 모바일 검색창 너비 조정 */}
+                    <input type="search" placeholder="검색..." class="w-full p-2 sm:p-3 pl-8 sm:pl-10 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none placeholder-gray-400 text-sm">
+                    <i class="fas fa-search absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-base"></i>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 sm:space-x-4">
                     <button class="p-2 rounded-full hover:bg-purple-700/30">
-                        <i class="fas fa-bell text-xl"></i>
+                        <i class="fas fa-bell text-lg sm:text-xl"></i>
                     </button>
-                    <img src="https://placehold.co/40x40/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer">
+                    <img src="https://placehold.co/32x32/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer"> {/* 모바일 아바타 크기 조정 */}
                 </div>
             </div>
         </header>
 
-        <div class="flex-grow p-6 overflow-y-auto scrollable-content pb-6"> 
+        <div class="flex-grow p-4 sm:p-6 overflow-y-auto scrollable-content pb-6"> 
             <section id="home" class="content-section active">
-                <h2 class="text-3xl font-semibold mb-6">AION 홈</h2>
-                <div class="mb-10">
-                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
-                    <div id="aionChartContainer" class="flex overflow-x-auto space-x-3 pb-3 horizontal-scroll sm:grid sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 lg:space-x-0 lg:pb-0">
-                        <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm flex-none">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">AION 홈</h2>
+                <div class="mb-8 sm:mb-10">
+                    <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-chart-line mr-2 neon-accent"></i>AION 차트 <span class="text-xs sm:text-sm text-gray-400 ml-2">(조회수 TOP 10)</span></h3>
+                    <div id="aionChartContainer" class="flex overflow-x-auto space-x-3 pb-3 horizontal-scroll sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-3 sm:space-x-0 sm:pb-0">
+                        <p id="aionChartPlaceholder" class="text-gray-400 col-span-full text-sm flex-none whitespace-nowrap">아직 차트에 표시할 콘텐츠가 없습니다. 영상을 시청하여 조회수를 올려보세요!</p>
                     </div>
                 </div>
-                <div class="mb-10">
-                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-star mr-2 neon-accent"></i>추천 음악</h3>
+                <div class="mb-8 sm:mb-10">
+                    <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-star mr-2 neon-accent"></i>추천 음악</h3>
                     <div id="recommendedMusicContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                          <p id="recommendedMusicPlaceholder" class="text-gray-400 col-span-full text-sm">추천된 음악이 없습니다.</p>
                     </div>
                 </div>
-                <div class="mb-10">
-                    <h3 class="text-2xl font-medium mb-4 flex items-center"><i class="fas fa-music mr-2 neon-accent"></i>새로운 AI 음악 & MV</h3>
+                <div class="mb-8 sm:mb-10">
+                    <h3 class="text-xl sm:text-2xl font-medium mb-3 sm:mb-4 flex items-center"><i class="fas fa-music mr-2 neon-accent"></i>새로운 AI 음악 & MV</h3>
                     <div id="newUploadsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                         <p id="newUploadsPlaceholder" class="text-gray-400 col-span-full text-sm">음악이나 뮤직비디오가 여기에 표시됩니다.</p>
                     </div>
@@ -190,9 +190,9 @@
             </section>
 
             <section id="discover" class="content-section">
-                <h2 class="text-3xl font-semibold mb-6">탐색하기</h2>
-                <div class="mb-6 flex flex-wrap gap-4">
-                    <select id="discoverGenreFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">탐색하기</h2>
+                <div class="mb-6 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+                    <select id="discoverGenreFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm w-full sm:w-auto">
                         <option value="">장르 전체</option> 
                         <option value="K-Pop">K-Pop</option> 
                         <option value="발라드">발라드</option> 
@@ -205,7 +205,7 @@
                         <option value="록">록</option> 
                         <option value="기타">기타</option>
                     </select>
-                    <select id="discoverMoodFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm">
+                    <select id="discoverMoodFilter" class="p-3 rounded-lg bg-black/30 border border-purple-700/50 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm w-full sm:w-auto">
                         <option value="">분위기 전체</option> 
                         <option value="신남">신남</option> 
                         <option value="차분함">차분함</option> 
@@ -218,18 +218,17 @@
                     </select>
                     </div>
                 <div id="discoverContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {/* 초기 데모 탐색 아이템은 JS에서 렌더링 */}
                     <p id="discoverPlaceholder" class="text-gray-400 col-span-full text-sm">탐색할 콘텐츠가 로드 중이거나 없습니다.</p>
                 </div>
             </section>
 
             <section id="library" class="content-section">
-                <h2 class="text-3xl font-semibold mb-6">내 보관함</h2>
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">내 보관함</h2>
                 <div class="space-y-8">
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-xl font-medium">내 플레이리스트</h3>
-                            <button id="createPlaylistButton" class="neon-accent-bg text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors">
+                            <h3 class="text-lg sm:text-xl font-medium">내 플레이리스트</h3>
+                            <button id="createPlaylistButton" class="neon-accent-bg text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-colors">
                                 <i class="fas fa-plus mr-1"></i> 새 플레이리스트
                             </button>
                         </div>
@@ -238,13 +237,13 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium mb-3">좋아요 표시한 곡</h3>
+                        <h3 class="text-lg sm:text-xl font-medium mb-3">좋아요 표시한 곡</h3>
                         <div id="likedSongsContainer" class="space-y-2">
                             <p id="likedSongsPlaceholder" class="text-gray-400 text-sm">아직 좋아요 표시한 곡이 없습니다.</p>
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium mb-3">구독한 AI 아티스트</h3>
+                        <h3 class="text-lg sm:text-xl font-medium mb-3">구독한 AI 아티스트</h3>
                         <div id="subscribedArtistsContainer" class="space-y-2">
                              <p id="subscribedArtistsPlaceholder" class="text-gray-400 text-sm">아직 구독한 아티스트가 없습니다.</p>
                         </div>
@@ -253,8 +252,8 @@
             </section>
 
             <section id="upload" class="content-section">
-                <h2 class="text-3xl font-semibold mb-6">AI 콘텐츠 업로드</h2>
-                <div class="glassmorphism p-8 rounded-lg max-w-2xl mx-auto">
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">AI 콘텐츠 업로드</h2>
+                <div class="glassmorphism p-6 sm:p-8 rounded-lg max-w-2xl mx-auto">
                     <form id="uploadForm" class="space-y-6">
                         <div>
                             <label for="uploadContentType" class="block text-sm font-medium mb-1">콘텐츠 유형</label>
@@ -315,23 +314,23 @@
             </section>
             
             <section id="profile" class="content-section">
-                <h2 class="text-3xl font-semibold mb-6">내 프로필</h2>
-                 <div class="glassmorphism p-8 rounded-lg max-w-2xl mx-auto">
+                <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">내 프로필</h2>
+                 <div class="glassmorphism p-6 sm:p-8 rounded-lg max-w-2xl mx-auto">
                     <div class="flex flex-col items-center space-y-4">
-                        <img src="https://placehold.co/120x120/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-32 h-32 rounded-full border-4 border-purple-500">
-                        <h3 class="text-2xl font-semibold">사용자 이름 (또는 AI 아티스트명)</h3>
-                        <p class="text-gray-400">user_email@example.com</p>
-                        <button class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors">프로필 수정</button>
+                        <img src="https://placehold.co/120x120/7F00FF/FFFFFF?text=U" alt="User Avatar" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-purple-500">
+                        <h3 class="text-xl sm:text-2xl font-semibold">사용자 이름 (또는 AI 아티스트명)</h3>
+                        <p class="text-gray-400 text-sm">user_email@example.com</p>
+                        <button class="px-4 py-2 sm:px-6 sm:py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors text-sm">프로필 수정</button>
                     </div>
                     <div class="mt-8">
-                        <h4 class="text-lg font-medium mb-2">계정 정보</h4>
-                        <p class="text-gray-400">구독 상태: <span class="neon-accent">프리미엄</span></p>
-                        <p class="text-gray-400">가입일: 2024년 5월 21일</p>
+                        <h4 class="text-base sm:text-lg font-medium mb-2">계정 정보</h4>
+                        <p class="text-gray-400 text-sm">구독 상태: <span class="neon-accent">프리미엄</span></p>
+                        <p class="text-gray-400 text-sm">가입일: 2024년 5월 21일</p>
                     </div>
                      <div class="mt-8">
-                        <h4 class="text-lg font-medium mb-2">내 AI 창작물 통계 (창작자용)</h4>
-                        <p class="text-gray-400">총 스트리밍: 10,580회</p>
-                        <p class="text-gray-400">팔로워: 120명</p>
+                        <h4 class="text-base sm:text-lg font-medium mb-2">내 AI 창작물 통계 (창작자용)</h4>
+                        <p class="text-gray-400 text-sm">총 스트리밍: 10,580회</p>
+                        <p class="text-gray-400 text-sm">팔로워: 120명</p>
                     </div>
                 </div>
             </section>
@@ -600,7 +599,7 @@
             }
             
             const actionButtonsHTML = actionButtons.join('');
-            const imageClass = "h-20"; // 썸네일 높이 축소 (기존 h-28)
+            const imageClass = "h-20"; // 모바일 썸네일 높이 축소
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
@@ -624,8 +623,9 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer';
 
+            // AION 차트 아이템에 대한 모바일 가로 스크롤 너비 조정
             if (isChartItem) { 
-                itemClasses += ' w-4/5 flex-none sm:w-auto'; 
+                itemClasses += ' w-2/3 sm:w-4/5 md:w-auto flex-none'; // 모바일에서 너비 조정, sm 이상에서는 자동
             }
             
             newItemDiv.className = itemClasses;
