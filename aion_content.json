@@ -278,5 +278,33 @@
     "views": 2,
     "isRecommended": false,
     "isInitialDemo": false
+  },
+  {
+    "itemId": "item-1748004096650-muw2z7ldi",
+    "youtubeId": "T6apjIzfscU",
+    "title": "늪",
+    "aiMusicArtist": "성필문",
+    "aiTool": "Suno AI",
+    "isInstrumental": false,
+    "genre": "K-Pop",
+    "mood": "긴장감",
+    "tags": "",
+    "views": 0,
+    "isRecommended": false,
+    "isInitialDemo": false
+  },
+  {
+    "itemId": "item-1748004172542-fionzje36",
+    "youtubeId": "4142mKjFUVo",
+    "title": "내일을 희망이라고 부를 수 있기를",
+    "aiMusicArtist": "성필문",
+    "aiTool": "Suno AI",
+    "isInstrumental": false,
+    "genre": "K-Pop",
+    "mood": "차분함",
+    "tags": "",
+    "views": 0,
+    "isRecommended": false,
+    "isInitialDemo": false
   }
 ]
