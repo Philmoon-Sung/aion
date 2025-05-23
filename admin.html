@@ -122,7 +122,11 @@
         #mobileSidebarOverlay.hidden {
             display: none;
         }
-        /* 썸네일 관련 스타일은 JS에서 동적으로 imageClass 변수를 통해 제어 */
+        .thumbnail-image { /* 썸네일 이미지 자체 */
+            width: 100%;
+            object-fit: cover;
+        }
+
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
