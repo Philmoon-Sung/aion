@@ -43,10 +43,10 @@
             position: absolute;
             top: 0.5rem; 
             right: 0.5rem; 
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.35rem; 
+            display: flex; /* 가로 배열을 위해 flex 사용 */
+            flex-direction: row; /* 명시적으로 가로 방향 */
+            align-items: center; /* 수직 중앙 정렬 */
+            gap: 0.35rem; /* 버튼 간 간격 */
             z-index: 10;
         }
         .item-action-icon {
@@ -83,7 +83,7 @@
             transform: scale(1.2);
         }
         .youtube-playable:hover .item-action-icon { opacity: 0.8; }
-        .youtube-playable { position: relative; }
+        .youtube-playable { position: relative; padding-top: 3rem; /* 액션 버튼 공간 확보 */}
 
         .toast-message {
             position: fixed; bottom: 20px; left: 50%;
@@ -98,6 +98,7 @@
         @media (min-width: 768px) { 
             .item-title { font-size: 0.875rem; } 
             .item-artist, .item-tags { font-size: 0.75rem; } 
+            .youtube-playable { padding-top: 0; } /* PC에서는 추가 패딩 불필요 */
         }
         .item-artist-wrapper { display: flex; align-items: center; } 
 
@@ -716,9 +717,10 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
-            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth < 640 ) { // sm 브레이크포인트 미만 (모바일)
-                 itemClasses += ' w-3/5 flex-none'; // AION 차트 모바일 가로 스크롤 시 너비
-            }
+            // AION 차트 및 다른 섹션들의 모바일 그리드 레이아웃을 위해 flex-none 제거
+            // if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth < 640 ) { 
+            //      itemClasses += ' w-3/5 flex-none'; 
+            // }
             
             newItemDiv.className = itemClasses;
             newItemDiv.dataset.youtubeId = itemData.youtubeId;
@@ -1507,7 +1509,7 @@
         function renderSubscribedArtists() {
             if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return;
             clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder);
-            const subscribedArtists = getSubscribedArtists();
+            const subscribedArtists = getStoredData(SUBSCRIBED_ARTISTS_KEY);
 
             if (subscribedArtists.length > 0) {
                 subscribedArtistsPlaceholder.classList.add('hidden');
