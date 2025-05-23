@@ -264,5 +264,19 @@
     "views": 1,
     "isRecommended": false,
     "isInitialDemo": false
+  },
+  {
+    "itemId": "item-1747993667292-31vgvqkc7",
+    "youtubeId": "hRTGym30W78",
+    "title": "Momo를 닮은 아름다운 사람",
+    "aiMusicArtist": "성필문",
+    "aiTool": "Suno AI",
+    "isInstrumental": false,
+    "genre": "K-Pop",
+    "mood": "편안함",
+    "tags": "",
+    "views": 2,
+    "isRecommended": false,
+    "isInitialDemo": false
   }
 ]
