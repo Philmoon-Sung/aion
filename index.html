@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AION - AI Music & Video</title>
+    <title>AION - AI Music & Video (Firestore Realtime)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    {/* Firebase SDK 추가 */}
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+    {/* <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> {/* 필요시 인증 추가 */}
+
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -477,8 +485,29 @@
     <div id="toastMessage" class="toast-message"></div>
 
     <script>
+        // --- Firebase 구성 (사용자의 실제 값으로 대체 필요) ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            // measurementId: "YOUR_MEASUREMENT_ID" // 선택 사항
+        };
+
+        // Firebase 앱 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); // Firestore 인스턴스
+        const functions = firebase.functions(); // Cloud Functions 인스턴스 (필요시 리전 지정)
+        // const auth = firebase.auth(); // Authentication 인스턴스 (필요시)
+
+        // Firestore 로그 레벨 설정 (개발 중 디버깅에 유용)
+        // firebase.firestore.setLogLevel('debug');
+
+
         // --- 관리자 모드 설정 ---
-        const isAdminMode = false; // 관리자용: true, 배포용: false
+        const isAdminMode = true; // Firestore 연동 시 관리자/사용자 로직 구분에 중요
 
         // --- 네비게이션 및 UI 기본 로직 ---
         const navItems = document.querySelectorAll('.nav-item');
@@ -576,13 +605,14 @@
         const exportContentButtonContainerMobileSidebar = document.getElementById('exportContentButtonContainerMobileSidebar');
 
 
-        if (!isAdminMode) {
+        // 관리자 모드 UI 처리 (Firestore 연동 후에도 필요시 유지 또는 수정)
+        if (!isAdminMode) { // 일반 사용자 모드
             if (uploadSection) uploadSection.style.display = 'none';
             if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
             if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
             if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'none';
             if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'none';
-        } else {
+        } else { // 관리자 모드
             if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'block'; 
             if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'block';
         }
@@ -610,19 +640,18 @@
         const defaultThumbnail = 'https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기';
         const thumbnailErrorPlaceholder = 'https://placehold.co/300x180/330033/FFFFFF?text=썸네일+오류';
 
-        // --- localStorage 관련 함수 ---
-        const USER_UPLOADS_KEY = 'aionUserUploads';
+        // --- localStorage 관련 키 (플레이리스트, 구독, 좋아요는 우선 localStorage 유지) ---
         const PLAYLISTS_KEY = 'aionPlaylists';
         const SUBSCRIBED_ARTISTS_KEY = 'aionSubscribedArtists';
         const LIKED_ITEMS_KEY = 'aionLikedItems';
 
-        let allContentData = []; 
-
+        let allContentData = []; // Firestore에서 데이터를 받아올 전역 변수
 
         function generateItemId(prefix = 'item') { 
             return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         }
 
+        // localStorage용 함수 (플레이리스트 등에 계속 사용)
         function getStoredData(key) {
             const stored = localStorage.getItem(key);
             return stored ? JSON.parse(stored) : [];
@@ -643,15 +672,13 @@
             }, 3000);
         }
 
-        // --- 콘텐츠 렌더링 함수 ---
+        // --- 콘텐츠 렌더링 함수 (기존과 유사, 데이터 소스만 allContentData로 통일) ---
         const newUploadsContainer = document.getElementById('newUploadsContainer');
         const newUploadsPlaceholder = document.getElementById('newUploadsPlaceholder');
         const aionChartContainer = document.getElementById('aionChartContainer');
         const aionChartPlaceholder = document.getElementById('aionChartPlaceholder');
         const recommendedMusicContainer = document.getElementById('recommendedMusicContainer');
         const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
-        // const discoverContainer = document.getElementById('discoverContainer'); // 탐색 기능 제거됨
-        // const discoverPlaceholder = document.getElementById('discoverPlaceholder'); // 탐색 기능 제거됨
         const myPlaylistsContainer = document.getElementById('myPlaylistsContainer');
         const myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
         const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
@@ -672,17 +699,19 @@
             
             actionButtonsHTML += `<i class="fas fa-list-ul item-action-icon add-to-playlist-icon" title="플레이리스트에 추가"></i>`;
 
-            const isLiked = isItemLiked(itemData.itemId);
+            const isLiked = isItemLiked(itemData.itemId); // localStorage 기반 좋아요 확인
             const likeIconClass = isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart';
             const likeTitle = isLiked ? '좋아요 취소' : '좋아요';
             actionButtonsHTML +=`<i class="${likeIconClass} item-action-icon like-item-button" title="${likeTitle}"></i>`;
             
-            if (currentContainer && currentContainer.id === 'newUploadsContainer' && !itemData.isInitialDemo) {
+            // 추천 버튼 (관리자 모드에서만, Firestore 데이터 기반으로 상태 표시)
+             if (isAdminMode && currentContainer && currentContainer.id === 'newUploadsContainer') {
                 let starIconClass = itemData.isRecommended ? 'fas fa-star' : 'far fa-star';
                 let starColorClass = itemData.isRecommended ? 'recommended' : '';
                 let recommendTitleText = itemData.isRecommended ? '추천 취소' : '추천 하기';
                 actionButtonsHTML +=`<i class="${starIconClass} item-action-icon recommend-checkbox-icon ${starColorClass}" title="${recommendTitleText}"></i>`;
             }
+
 
             if (isAdminMode && !isChartItem && !isRecommendedItem) {
                 actionButtonsHTML +=`<i class="fas fa-pencil-alt item-action-icon edit-youtube-link" title="콘텐츠 정보 수정"></i>`;
@@ -692,7 +721,7 @@
             
             const imageClass = "h-20 sm:h-24 md:h-32"; 
             const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
-            const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); 
+            const isSubscribedByCurrentUser = isArtistSubscribed(artistDisplay); // localStorage 기반 구독 확인
             const subscribeIconClass = isSubscribedByCurrentUser ? 'fas fa-heart text-red-500' : 'far fa-heart';
             const subscribeTitle = isSubscribedByCurrentUser ? `${artistDisplay} 구독 취소` : `${artistDisplay} 구독`;
 
@@ -716,8 +745,7 @@
             const newItemDiv = document.createElement('div');
             let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer'; 
 
-            // AION 차트 모바일에서는 grid-cols-2, PC에서는 flex 스크롤 유지
-            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth >= 640 ) { // sm 브레이크포인트 이상
+            if (isChartItem && container.id === 'aionChartContainer' && window.innerWidth >= 640 ) { 
                  itemClasses += ' w-3/5 sm:w-auto flex-none'; 
             }
             
@@ -743,31 +771,24 @@
             });
             childrenToRemove.forEach(child => container.removeChild(child));
         }
-
-        function getInitialDemoItemsForNewUploads() {
-            return [];
-        }
         
-        // --- 메인 콘텐츠 로딩 및 렌더링 함수 ---
-        function renderPageContent(contentToRender = allContentData, targetContainerId = null, isSearchResult = false) {
-            if (targetContainerId) { 
-                // 이 부분은 탐색 기능이 제거되었으므로 현재 사용되지 않음
-            } else { 
-                renderNewUploadsSection(contentToRender);
-                renderAionChart(contentToRender);
-                renderRecommendedMusicSection(contentToRender);
-                // renderDiscoverItems(); // 탐색 기능 제거됨
-                
-                renderMyPlaylists();
-                renderSubscribedArtists();
-                renderLikedSongs();
-            }
+        // --- 메인 콘텐츠 로딩 및 렌더링 함수 (데이터 소스: allContentData) ---
+        function renderPageContent() {
+            renderNewUploadsSection(allContentData);
+            renderAionChart(allContentData);
+            renderRecommendedMusicSection(allContentData);
+            
+            renderMyPlaylists(); // localStorage 기반
+            renderSubscribedArtists(); // localStorage 기반
+            renderLikedSongs(); // localStorage 기반
         }
         
         function renderNewUploadsSection(items) {
             if (!newUploadsContainer) return;
             clearContainer(newUploadsContainer, newUploadsPlaceholder);
-            const itemsToDisplay = items.filter(item => !item.isInitialDemo); 
+             // isInitialDemo 필터링은 Firestore에서 가져온 데이터에는 불필요할 수 있음
+            const itemsToDisplay = items.sort((a,b) => (b.createdAt && a.createdAt) ? b.createdAt.toMillis() - a.createdAt.toMillis() : 0);
+
 
             if (itemsToDisplay.length > 0) {
                 if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden');
@@ -787,7 +808,7 @@
             if (!recommendedMusicContainer || !recommendedMusicPlaceholder) return;
             clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder); 
 
-            const recommendedItems = items.filter(item => item.isRecommended === true && !item.isInitialDemo);
+            const recommendedItems = items.filter(item => item.isRecommended === true);
 
             if (recommendedItems.length > 0) {
                 recommendedMusicPlaceholder.classList.add('hidden'); 
@@ -807,7 +828,7 @@
             clearContainer(aionChartContainer, aionChartPlaceholder); 
 
             const chartItemsData = items
-                .filter(item => (item.views || 0) > 0 && !item.isInitialDemo) 
+                .filter(item => (item.views || 0) > 0) 
                 .sort((a, b) => (b.views || 0) - (a.views || 0)) 
                 .slice(0, 10); 
 
@@ -822,7 +843,7 @@
             }
         }
 
-        // --- 업로드 섹션 로직 ---
+        // --- 업로드 섹션 로직 (Firestore 연동) ---
         const uploadForm = document.getElementById('uploadForm');
         const uploadYoutubeLinkInput = document.getElementById('uploadYoutubeLink'); 
         const uploadThumbnailPreview = document.getElementById('uploadThumbnailPreview'); 
@@ -842,8 +863,8 @@
             }
         }
 
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', function(event) {
+        if (uploadForm && isAdminMode) { // 관리자만 업로드 가능
+            uploadForm.addEventListener('submit', async function(event) { // async 추가
                 event.preventDefault();
                 const youtubeUrl = document.getElementById('uploadYoutubeLink').value;
                 const title = document.getElementById('uploadTitle').value;
@@ -853,7 +874,6 @@
                 const genre = document.getElementById('uploadGenre').value; 
                 const mood = document.getElementById('uploadMood').value;
                 const tags = document.getElementById('uploadTags').value;
-
 
                 const youtubeId = getYouTubeId(youtubeUrl);
 
@@ -867,7 +887,7 @@
                 }
 
                 const newItemData = {
-                    itemId: generateItemId(),
+                    // itemId는 Firestore에서 자동 생성 ID를 사용하거나, 필요시 여기서 생성
                     youtubeId: youtubeId,
                     title: title,
                     aiMusicArtist: aiMusicArtist, 
@@ -878,34 +898,41 @@
                     tags: tags,
                     views: 0,
                     isRecommended: false, 
-                    isInitialDemo: false 
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(), // 생성 시간
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()  // 수정 시간
                 };
                 
-                const currentUploads = getStoredData(USER_UPLOADS_KEY);
-                currentUploads.push(newItemData);
-                saveData(USER_UPLOADS_KEY, currentUploads);
-                
-                if (isAdminMode) {
-                    allContentData = currentUploads;
+                try {
+                    // Firestore 'contentItems' 컬렉션에 새 문서 추가 (ID 자동 생성)
+                    const docRef = await db.collection('contentItems').add(newItemData);
+                    // 생성된 ID를 itemId로 사용하려면 docRef.id 를 활용하여 다시 업데이트하거나,
+                    // 처음부터 특정 ID로 set 하고자 하면 doc(yourId).set(newItemData) 사용
+                    // 여기서는 자동 ID를 그대로 사용하고, 필요시 itemId 필드를 추가 저장할 수 있음
+                    // 예: await db.collection('contentItems').doc(docRef.id).update({ itemId: docRef.id });
+                    
+                    // 로컬 allContentData는 Firestore 리스너가 자동으로 업데이트하므로 별도 추가 X
+                    // renderPageContent()는 리스너에 의해 호출됨
+
+                    uploadForm.reset();
+                    if(uploadThumbnailPreview) uploadThumbnailPreview.src = defaultThumbnail;
+                    document.getElementById('uploadGenre').value = ""; 
+                    document.getElementById('uploadMood').value = ""; 
+                    document.getElementById('uploadAiTool').value = ""; 
+                    document.getElementById('uploadIsInstrumental').checked = false;
+                    showToast('콘텐츠가 성공적으로 Firestore에 업로드되었습니다!');
+                } catch (error) {
+                    console.error("Error adding document to Firestore: ", error);
+                    showToast('Firestore 업로드 중 오류 발생: ' + error.message);
                 }
-                renderPageContent(); 
-                
-                uploadForm.reset();
-                if(uploadThumbnailPreview) uploadThumbnailPreview.src = defaultThumbnail;
-                document.getElementById('uploadGenre').value = ""; 
-                document.getElementById('uploadMood').value = ""; 
-                document.getElementById('uploadAiTool').value = ""; 
-                document.getElementById('uploadIsInstrumental').checked = false;
-                showToast('콘텐츠가 성공적으로 업로드 및 저장되었습니다!');
             });
         }
 
-        // --- YouTube 모달, 콘텐츠 수정, 삭제, 추천, 아티스트 구독, 좋아요 로직 ---
+        // --- YouTube 모달, 콘텐츠 수정, 삭제, 추천 (Firestore 연동) ---
         const youtubeModal = document.getElementById('youtubeModal');
         const closeYoutubeModalButton = document.getElementById('closeYoutubeModalButton');
         const youtubePlayer = document.getElementById('youtubePlayer');
-        let currentItemToAddToPlaylist = null; 
-        let currentEditingItemId = null; 
+        let currentItemToAddToPlaylist = null; // 플레이리스트는 localStorage 유지
+        let currentEditingItemId = null; // Firestore 문서 ID
 
         const editItemModal = document.getElementById('editItemModal');
         const editItemForm = document.getElementById('editItemForm');
@@ -922,33 +949,43 @@
             });
         }
 
+        // 수정 모달 열기 (Firestore 데이터 기반)
+        async function openEditModal(itemId) { // itemId는 Firestore 문서 ID
+            try {
+                const docRef = db.collection('contentItems').doc(itemId);
+                const docSnap = await docRef.get();
 
-        function openEditModal(itemId) {
-            const itemsSource = isAdminMode ? getStoredData(USER_UPLOADS_KEY) : allContentData;
-            const itemToEdit = itemsSource.find(item => item.itemId === itemId);
+                if (!docSnap.exists || !editItemModal || !editItemForm) {
+                    showToast('수정할 항목을 찾을 수 없습니다.');
+                    return;
+                }
+                const itemToEdit = docSnap.data();
+                currentEditingItemId = itemId; // Firestore 문서 ID 저장
 
-            if (!itemToEdit || !editItemModal || !editItemForm) return;
-            currentEditingItemId = itemId;
-
-            document.getElementById('editItemId').value = itemToEdit.itemId;
-            document.getElementById('editYoutubeLink').value = `https://www.youtube.com/watch?v=$${itemToEdit.youtubeId}`;
-            editThumbnailPreview.src = getYouTubeThumbnailUrl(itemToEdit.youtubeId);
-            document.getElementById('editTitle').value = itemToEdit.title;
-            document.getElementById('editAiMusicArtist').value = itemToEdit.aiMusicArtist || ''; 
-            document.getElementById('editAiTool').value = itemToEdit.aiTool;
-            document.getElementById('editIsInstrumental').checked = itemToEdit.isInstrumental || false;
-            document.getElementById('editGenre').value = itemToEdit.genre || '';
-            document.getElementById('editMood').value = itemToEdit.mood || '';
-            document.getElementById('editTags').value = itemToEdit.tags || '';
-            
-            editItemModal.classList.remove('hidden');
-            editItemModal.classList.add('flex');
+                document.getElementById('editItemId').value = itemId; // 숨겨진 필드에 ID 저장 (폼에는 없어도 됨)
+                document.getElementById('editYoutubeLink').value = `https://www.youtube.com/watch?v=$${itemToEdit.youtubeId}`;
+                editThumbnailPreview.src = getYouTubeThumbnailUrl(itemToEdit.youtubeId);
+                document.getElementById('editTitle').value = itemToEdit.title;
+                document.getElementById('editAiMusicArtist').value = itemToEdit.aiMusicArtist || ''; 
+                document.getElementById('editAiTool').value = itemToEdit.aiTool;
+                document.getElementById('editIsInstrumental').checked = itemToEdit.isInstrumental || false;
+                document.getElementById('editGenre').value = itemToEdit.genre || '';
+                document.getElementById('editMood').value = itemToEdit.mood || '';
+                document.getElementById('editTags').value = itemToEdit.tags || '';
+                
+                editItemModal.classList.remove('hidden');
+                editItemModal.classList.add('flex');
+            } catch (error) {
+                console.error("Error fetching item for edit: ", error);
+                showToast('항목 정보를 불러오는 데 실패했습니다.');
+            }
         }
 
-        if(editItemForm) {
-            editItemForm.addEventListener('submit', function(event) {
+        // 수정 폼 제출 (Firestore 업데이트)
+        if(editItemForm && isAdminMode) {
+            editItemForm.addEventListener('submit', async function(event) { // async 추가
                 event.preventDefault();
-                if (!currentEditingItemId || !isAdminMode) return; 
+                if (!currentEditingItemId) return; 
 
                 const newYoutubeUrl = document.getElementById('editYoutubeLink').value;
                 const newYoutubeId = getYouTubeId(newYoutubeUrl);
@@ -958,8 +995,7 @@
                     return;
                 }
                 
-                const updatedItemData = {
-                    itemId: currentEditingItemId,
+                const updatedFields = { // Firestore 업데이트 시 변경된 필드만 전달 가능
                     youtubeId: newYoutubeId,
                     title: document.getElementById('editTitle').value,
                     aiMusicArtist: document.getElementById('editAiMusicArtist').value, 
@@ -968,28 +1004,18 @@
                     genre: document.getElementById('editGenre').value,
                     mood: document.getElementById('editMood').value,
                     tags: document.getElementById('editTags').value,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp() // 수정 시간 업데이트
                 };
 
-                let storedUploads = getStoredData(USER_UPLOADS_KEY);
-                const itemIndex = storedUploads.findIndex(item => item.itemId === currentEditingItemId);
-
-                if (itemIndex > -1) {
-                    updatedItemData.views = storedUploads[itemIndex].views || 0;
-                    updatedItemData.isRecommended = storedUploads[itemIndex].isRecommended || false;
-                    updatedItemData.isInitialDemo = storedUploads[itemIndex].isInitialDemo || false;
-
-
-                    storedUploads[itemIndex] = updatedItemData;
-                    saveData(USER_UPLOADS_KEY, storedUploads);
-                    
-                    allContentData = storedUploads; 
-                    renderPageContent();
-
+                try {
+                    await db.collection('contentItems').doc(currentEditingItemId).update(updatedFields);
+                    // 로컬 allContentData는 Firestore 리스너가 자동으로 업데이트
                     if(editItemModal) editItemModal.classList.add('hidden');
-                    showToast('콘텐츠 정보가 업데이트되었습니다.');
+                    showToast('콘텐츠 정보가 Firestore에서 업데이트되었습니다.');
                     currentEditingItemId = null;
-                } else {
-                    showToast('항목을 찾을 수 없어 업데이트에 실패했습니다.');
+                } catch (error) {
+                    console.error("Error updating document in Firestore: ", error);
+                    showToast('Firestore 업데이트 중 오류 발생: ' + error.message);
                 }
             });
         }
@@ -1001,8 +1027,8 @@
             });
         }
 
-        
-        document.body.addEventListener('click', function(event) {
+        // 이벤트 위임 (클릭 처리)
+        document.body.addEventListener('click', async function(event) { // async 추가
             const targetPlayableItem = event.target.closest('.youtube-playable');
             const targetEditButton = event.target.closest('.edit-youtube-link');
             const targetDeleteButton = event.target.closest('.delete-item-button');
@@ -1014,99 +1040,108 @@
 
             if (targetPlayableItem && !targetEditButton && !targetDeleteButton && !targetRecommendButton && !targetAddToPlaylistButton && !targetSubscribeButton && !targetLikeButton) { 
                 const youtubeId = targetPlayableItem.dataset.youtubeId;
-                const itemId = targetPlayableItem.dataset.itemId;
+                const itemId = targetPlayableItem.dataset.itemId; // Firestore 문서 ID
 
                 if (youtubeId && youtubePlayer && youtubeModal) {
                     youtubePlayer.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`;
                     youtubeModal.classList.remove('hidden');
                     youtubeModal.classList.add('flex');
 
-                    if (itemId && !itemId.startsWith('initial-')) { 
-                        let currentContentSource = isAdminMode ? getStoredData(USER_UPLOADS_KEY) : allContentData;
-                        const itemIndex = currentContentSource.findIndex(item => item.itemId === itemId);
-                        if (itemIndex > -1) {
-                            currentContentSource[itemIndex].views = (currentContentSource[itemIndex].views || 0) + 1;
-                            if(isAdminMode) { 
-                                saveData(USER_UPLOADS_KEY, currentContentSource);
-                            } 
-                            renderAionChart(allContentData); 
+                    if (itemId) { 
+                        // Cloud Function 호출 준비
+                        const incrementView = functions.httpsCallable('incrementViewCount'); // 함수 이름 확인 필요
+                        try {
+                            // await incrementView({ itemId: itemId }); // Cloud Function 호출
+                            // console.log(`Called incrementViewCount for ${itemId}`);
+                            // 조회수 UI 업데이트는 Firestore 리스너가 담당
+                            // 임시 클라이언트 측 증가 (Cloud Function 구현 전 테스트용)
+                             const itemRef = db.collection('contentItems').doc(itemId);
+                             await itemRef.update({ views: firebase.firestore.FieldValue.increment(1) });
+                             console.log(`Incremented view for ${itemId} directly in Firestore (for testing).`);
+
+                        } catch (error) {
+                            console.error('Error calling incrementViewCount function or updating views:', error);
+                            showToast('조회수 업데이트 중 오류 발생.');
                         }
                     }
                 }
             }
 
+            // 수정 버튼 (관리자)
             if (isAdminMode && targetEditButton) { 
                 event.stopPropagation(); 
                 const playableItemElement = targetEditButton.closest('.youtube-playable');
-                const itemIdToEdit = playableItemElement.dataset.itemId;
-
-                if (itemIdToEdit && !itemIdToEdit.startsWith('initial-')) { 
+                const itemIdToEdit = playableItemElement.dataset.itemId; // Firestore 문서 ID
+                if (itemIdToEdit) { 
                     openEditModal(itemIdToEdit);
-                } else if (itemIdToEdit && itemIdToEdit.startsWith('initial-')) { 
-                    showToast('데모 콘텐츠는 이 방식으로 수정할 수 없습니다.');
                 }
             }
 
+            // 삭제 버튼 (관리자)
             if (isAdminMode && targetDeleteButton) { 
                 event.stopPropagation();
                 const playableItemElement = targetDeleteButton.closest('.youtube-playable');
-                const itemIdToDelete = playableItemElement.dataset.itemId;
+                const itemIdToDelete = playableItemElement.dataset.itemId; // Firestore 문서 ID
 
-                if (itemIdToDelete && !itemIdToDelete.startsWith('initial-')) { 
-                    let storedUploads = getStoredData(USER_UPLOADS_KEY);
-                    const updatedUploads = storedUploads.filter(item => item.itemId !== itemIdToDelete);
-                    saveData(USER_UPLOADS_KEY, updatedUploads);
-                    
-                    let playlists = getStoredData(PLAYLISTS_KEY);
-                    playlists.forEach(pl => {
-                        pl.items = pl.items.filter(id => id !== itemIdToDelete);
-                    });
-                    saveData(PLAYLISTS_KEY, playlists);
-                    
-                    allContentData = updatedUploads; 
-                    renderPageContent();
+                if (itemIdToDelete && confirm(`'${allContentData.find(item => item.itemId === itemIdToDelete)?.title || '해당 항목'}'을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) { 
+                    try {
+                        await db.collection('contentItems').doc(itemIdToDelete).delete();
+                        
+                        // 플레이리스트에서 해당 아이템 ID 제거 (플레이리스트는 localStorage 유지)
+                        let playlists = getStoredData(PLAYLISTS_KEY);
+                        playlists.forEach(pl => {
+                            pl.items = pl.items.filter(id => id !== itemIdToDelete);
+                        });
+                        saveData(PLAYLISTS_KEY, playlists);
+                        renderMyPlaylists(); // 플레이리스트 UI 즉시 업데이트
+                        
+                        // 좋아요 목록에서 해당 아이템 ID 제거 (localStorage 유지)
+                        let likedItems = getStoredData(LIKED_ITEMS_KEY);
+                        likedItems = likedItems.filter(id => id !== itemIdToDelete);
+                        saveLikedItems(likedItems);
+                        renderLikedSongs(); // 좋아요 목록 UI 즉시 업데이트
 
-                    showToast('콘텐츠가 삭제되었습니다.');
-                } else if (itemIdToDelete && itemIdToDelete.startsWith('initial-')) { 
-                     playableItemElement.remove(); 
-                     showToast('데모 콘텐츠가 UI에서 제거되었습니다. 새로고침하면 복구됩니다.');
+                        showToast('콘텐츠가 Firestore에서 삭제되었습니다.');
+                        // UI 업데이트는 Firestore 리스너가 처리
+                    } catch (error) {
+                        console.error("Error deleting document from Firestore: ", error);
+                        showToast('Firestore 삭제 중 오류 발생: ' + error.message);
+                    }
                 }
             }
 
-            if (targetRecommendButton) {
+            // 추천 버튼 (관리자)
+            if (isAdminMode && targetRecommendButton) {
                 event.stopPropagation();
                 const playableItemElement = targetRecommendButton.closest('.youtube-playable');
-                const itemIdToRecommend = playableItemElement.dataset.itemId;
+                const itemIdToRecommend = playableItemElement.dataset.itemId; // Firestore 문서 ID
 
-                if (itemIdToRecommend && !itemIdToRecommend.startsWith('initial-')) { 
-                    let currentContentSource = isAdminMode ? getStoredData(USER_UPLOADS_KEY) : allContentData;
-                    const itemIndex = currentContentSource.findIndex(item => item.itemId === itemIdToRecommend);
-                    if (itemIndex > -1) {
-                        currentContentSource[itemIndex].isRecommended = !currentContentSource[itemIndex].isRecommended; 
-                        if(isAdminMode) {
-                             saveData(USER_UPLOADS_KEY, currentContentSource);
-                             allContentData = currentContentSource; 
-                        } else {
-                             const targetItemInAllData = allContentData.find(i => i.itemId === itemIdToRecommend);
-                             if (targetItemInAllData) { 
-                                targetItemInAllData.isRecommended = currentContentSource[itemIndex].isRecommended;
-                             }
+                if (itemIdToRecommend) { 
+                    try {
+                        const itemRef = db.collection('contentItems').doc(itemIdToRecommend);
+                        const docSnap = await itemRef.get();
+                        if (docSnap.exists) {
+                            const currentIsRecommended = docSnap.data().isRecommended || false;
+                            await itemRef.update({ isRecommended: !currentIsRecommended });
+                            showToast(!currentIsRecommended ? '추천 목록에 추가되었습니다.' : '추천 목록에서 제거되었습니다.');
+                            // UI 업데이트는 Firestore 리스너가 처리
                         }
-                        renderPageContent();
-                        showToast(currentContentSource[itemIndex].isRecommended ? '추천 목록에 추가되었습니다.' : '추천 목록에서 제거되었습니다.');
+                    } catch (error) {
+                        console.error("Error updating recommendation status: ", error);
+                        showToast('추천 상태 업데이트 중 오류 발생.');
                     }
-                } else if (itemIdToRecommend && itemIdToRecommend.startsWith('initial-')) {
-                    showToast('데모 콘텐츠는 추천 상태를 변경할 수 없습니다.');
                 }
             }
 
+            // 플레이리스트에 추가 (기존 localStorage 로직 유지)
             if (targetAddToPlaylistButton) {
                 event.stopPropagation();
                 const playableItemElement = targetAddToPlaylistButton.closest('.youtube-playable');
-                currentItemToAddToPlaylist = playableItemElement.dataset.itemId;
+                currentItemToAddToPlaylist = playableItemElement.dataset.itemId; // Firestore 문서 ID 또는 로컬에서 관리하는 ID
                 openAddToPlaylistModal();
             }
 
+            // 아티스트 구독 (기존 localStorage 로직 유지)
             if (targetSubscribeButton) {
                 event.stopPropagation();
                 const artistName = targetSubscribeButton.dataset.artistName;
@@ -1115,10 +1150,11 @@
                 }
             }
             
+            // 좋아요 (기존 localStorage 로직 유지)
             if (targetLikeButton) {
                 event.stopPropagation();
                 const playableItemElement = targetLikeButton.closest('.youtube-playable');
-                const itemIdToLike = playableItemElement.dataset.itemId;
+                const itemIdToLike = playableItemElement.dataset.itemId; // Firestore 문서 ID 또는 로컬에서 관리하는 ID
                 if(itemIdToLike){
                     toggleLikeItem(itemIdToLike);
                 }
@@ -1143,19 +1179,19 @@
             });
         }
         
-        // --- 업로드 섹션 필드 토글 로직 ---
+        // --- 업로드 섹션 필드 토글 로직 (기존과 동일) ---
         const uploadContentTypeSelect = document.getElementById('uploadContentType');
         const youtubeLinkGroup = document.getElementById('youtubeLinkGroup');
-        const audioUploadGroup = document.getElementById('audioUploadGroup');
+        // const audioUploadGroup = document.getElementById('audioUploadGroup'); // 사용되지 않음
 
         function toggleUploadFields() {
             if (!uploadContentTypeSelect) return;
             if (uploadContentTypeSelect.value === 'mv') {
                 if (youtubeLinkGroup) youtubeLinkGroup.classList.remove('hidden');
-                if (audioUploadGroup) audioUploadGroup.classList.add('hidden');
+                // if (audioUploadGroup) audioUploadGroup.classList.add('hidden');
             } else if (uploadContentTypeSelect.value === 'music') {
                 if (youtubeLinkGroup) youtubeLinkGroup.classList.add('hidden');
-                if (audioUploadGroup) audioUploadGroup.classList.remove('hidden');
+                // if (audioUploadGroup) audioUploadGroup.classList.remove('hidden');
             }
         }
         if (uploadContentTypeSelect) {
@@ -1163,7 +1199,7 @@
             toggleUploadFields(); 
         }
 
-        // --- 플레이리스트 관련 로직 ---
+        // --- 플레이리스트 관련 로직 (기존 localStorage 기반 로직 유지) ---
         const createPlaylistButton = document.getElementById('createPlaylistButton');
         const createPlaylistModal = document.getElementById('createPlaylistModal');
         const cancelCreatePlaylist = document.getElementById('cancelCreatePlaylist');
@@ -1225,7 +1261,7 @@
             playlistSelectionContainer.innerHTML = ''; 
 
             if (playlists.length > 0) {
-                playlistSelectionPlaceholder.classList.add('hidden');
+                if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.add('hidden');
                 playlists.forEach(pl => {
                     const div = document.createElement('div');
                     div.className = 'flex items-center space-x-2 p-2 hover:bg-purple-700/30 rounded-md cursor-pointer';
@@ -1252,10 +1288,10 @@
                 });
             } else {
                 playlistSelectionContainer.appendChild(playlistSelectionPlaceholder);
-                playlistSelectionPlaceholder.classList.remove('hidden');
+                 if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.remove('hidden');
             }
-            newPlaylistNameInAddModalInput.value = '';
-            addToPlaylistModal.classList.remove('hidden');
+            if(newPlaylistNameInAddModalInput) newPlaylistNameInAddModalInput.value = '';
+            if(addToPlaylistModal) addToPlaylistModal.classList.remove('hidden');
         }
 
         if(cancelAddToPlaylist) {
@@ -1318,9 +1354,9 @@
                     cover.className = 'playlist-cover';
                     if (pl.items.length > 0) {
                         const firstItemId = pl.items[0];
-                        // 모든 아이템 소스에서 검색
-                        const allItems = [...allContentData]; 
-                        const firstItemData = allItems.find(item => item.itemId === firstItemId);
+                        const allItems = [...allContentData]; // Firestore 데이터 포함
+                        const firstItemData = allItems.find(item => item.itemId === firstItemId || item.id === firstItemId); // Firestore ID도 고려
+
 
                         if (firstItemData && firstItemData.youtubeId) {
                             const img = document.createElement('img');
@@ -1372,15 +1408,15 @@
 
             if (playlist.items.length > 0) {
                 playlistDetailPlaceholder.classList.add('hidden');
-                const allItems = [...allContentData];
+                const allItems = [...allContentData]; // Firestore 데이터 포함
 
-                playlist.items.forEach(itemId => {
-                    const itemData = allItems.find(item => item.itemId === itemId);
+                playlist.items.forEach(itemId => { // itemId는 Firestore 문서 ID 또는 로컬 ID일 수 있음
+                    const itemData = allItems.find(item => item.itemId === itemId || item.id === itemId); // Firestore ID도 고려
                     if (itemData) {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'youtube-playable glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20';
                         itemDiv.dataset.youtubeId = itemData.youtubeId;
-                        itemDiv.dataset.itemId = itemData.itemId;
+                        itemDiv.dataset.itemId = itemData.itemId || itemData.id; // Firestore ID 우선
 
                         const img = document.createElement('img');
                         img.src = getYouTubeThumbnailUrl(itemData.youtubeId);
@@ -1418,7 +1454,7 @@
                         removeButton.title = "플레이리스트에서 삭제";
                         removeButton.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            removeSongFromPlaylist(playlistId, itemId);
+                            removeSongFromPlaylist(playlistId, itemData.itemId || itemData.id);
                         });
 
 
@@ -1447,7 +1483,7 @@
 
         if(deletePlaylistButton) {
             deletePlaylistButton.addEventListener('click', () => {
-                if (currentViewingPlaylistId) {
+                if (currentViewingPlaylistId && confirm("이 플레이리스트를 정말 삭제하시겠습니까?")) {
                     let playlists = getStoredData(PLAYLISTS_KEY);
                     playlists = playlists.filter(pl => pl.id !== currentViewingPlaylistId);
                     saveData(PLAYLISTS_KEY, playlists);
@@ -1471,27 +1507,19 @@
             }
         }
 
-        // --- 아티스트 구독 관련 로직 ---
-        function getSubscribedArtists() {
-            return getStoredData(SUBSCRIBED_ARTISTS_KEY);
-        }
-
-        function saveSubscribedArtists(artistsArray) {
-            saveData(SUBSCRIBED_ARTISTS_KEY, artistsArray);
-        }
-
+        // --- 아티스트 구독 관련 로직 (기존 localStorage 기반 로직 유지) ---
+        function getSubscribedArtists() { return getStoredData(SUBSCRIBED_ARTISTS_KEY); }
+        function saveSubscribedArtists(artistsArray) { saveData(SUBSCRIBED_ARTISTS_KEY, artistsArray); }
         function isArtistSubscribed(artistName) {
             if (!artistName) return false; 
-            const subscribedArtists = getSubscribedArtists();
-            return subscribedArtists.includes(artistName);
+            return getSubscribedArtists().includes(artistName);
         }
-
         function toggleArtistSubscription(artistName) {
             if (!artistName || artistName === 'N/A') { 
                  showToast('유효한 아티스트 이름이 아닙니다.');
                 return;
             }
-            let subscribedArtists = getStoredData(SUBSCRIBED_ARTISTS_KEY);
+            let subscribedArtists = getSubscribedArtists();
             const isSubscribed = subscribedArtists.includes(artistName);
 
             if (isSubscribed) {
@@ -1504,11 +1532,10 @@
             saveSubscribedArtists(subscribedArtists);
             renderPageContent(); 
         }
-
         function renderSubscribedArtists() {
             if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return;
             clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder);
-            const subscribedArtists = getStoredData(SUBSCRIBED_ARTISTS_KEY);
+            const subscribedArtists = getSubscribedArtists();
 
             if (subscribedArtists.length > 0) {
                 subscribedArtistsPlaceholder.classList.add('hidden');
@@ -1541,20 +1568,16 @@
             }
         }
         
-        // --- 좋아요 기능 로직 ---
-        function getLikedItems() {
-            return getStoredData(LIKED_ITEMS_KEY);
-        }
-        function saveLikedItems(likedItemsArray) {
-            saveData(LIKED_ITEMS_KEY, likedItemsArray);
-        }
+        // --- 좋아요 기능 로직 (기존 localStorage 기반 로직 유지) ---
+        function getLikedItems() { return getStoredData(LIKED_ITEMS_KEY); }
+        function saveLikedItems(likedItemsArray) { saveData(LIKED_ITEMS_KEY, likedItemsArray); }
         function isItemLiked(itemId) {
             if (!itemId) return false;
             return getLikedItems().includes(itemId);
         }
-        function toggleLikeItem(itemId) {
+        function toggleLikeItem(itemId) { // itemId는 Firestore 문서 ID 또는 로컬 ID
             if (!itemId) return;
-            let likedItems = getStoredData(LIKED_ITEMS_KEY);
+            let likedItems = getLikedItems();
             const itemIndex = likedItems.indexOf(itemId);
             if (itemIndex > -1) {
                 likedItems.splice(itemIndex, 1);
@@ -1566,24 +1589,22 @@
             saveLikedItems(likedItems);
             renderPageContent(); 
         }
-
         function renderLikedSongs() {
             if (!likedSongsContainer || !likedSongsPlaceholder) return;
             clearContainer(likedSongsContainer, likedSongsPlaceholder);
             const likedItemIds = getLikedItems();
             
-            const allPossibleItemsToLike = [...allContentData];
-
+            const allPossibleItemsToLike = [...allContentData]; // Firestore 데이터 포함
 
             if (likedItemIds.length > 0) {
                 likedSongsPlaceholder.classList.add('hidden');
                 likedItemIds.forEach(likedId => {
-                    const itemData = allPossibleItemsToLike.find(item => item.itemId === likedId);
+                    const itemData = allPossibleItemsToLike.find(item => item.itemId === likedId || item.id === likedId); // Firestore ID 고려
                     if (itemData) {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'youtube-playable glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20 cursor-pointer';
                         itemDiv.dataset.youtubeId = itemData.youtubeId;
-                        itemDiv.dataset.itemId = itemData.itemId;
+                        itemDiv.dataset.itemId = itemData.itemId || itemData.id;
 
                         const img = document.createElement('img');
                         img.src = getYouTubeThumbnailUrl(itemData.youtubeId);
@@ -1623,7 +1644,7 @@
                         unlikeButton.title = "좋아요 취소";
                         unlikeButton.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            toggleLikeItem(itemData.itemId);
+                            toggleLikeItem(itemData.itemId || itemData.id);
                         });
                         
                         actionWrapper.appendChild(playButton);
@@ -1643,18 +1664,19 @@
             }
         }
 
-        // --- JSON 내보내기 기능 (관리자 모드) ---
+        // --- JSON 내보내기 기능 (Firestore 데이터 기반) ---
         const exportBtnSidebar = document.getElementById('exportContentButtonSidebar');
         const exportBtnMobileSidebar = document.getElementById('exportContentButtonMobileSidebar');
 
         function exportContentToJson() {
-            const contentToExport = getStoredData(USER_UPLOADS_KEY);
-            if (contentToExport.length === 0) {
+            // allContentData는 Firestore에서 실시간으로 받아온 최신 데이터
+            if (allContentData.length === 0) {
                 showToast('내보낼 콘텐츠가 없습니다.');
                 return;
             }
-            const exportData = contentToExport.map(item => ({
-                itemId: item.itemId,
+            const exportData = allContentData.map(item => ({
+                // Firestore 문서 ID(item.id) 대신 자체 itemId를 사용하거나, item.id를 itemId로 매핑
+                itemId: item.itemId || item.id, 
                 youtubeId: item.youtubeId,
                 title: item.title,
                 aiMusicArtist: item.aiMusicArtist,
@@ -1664,8 +1686,12 @@
                 mood: item.mood,
                 tags: item.tags,
                 views: item.views || 0, 
-                isRecommended: item.isRecommended || false, 
-                isInitialDemo: item.isInitialDemo || false 
+                isRecommended: item.isRecommended || false,
+                // Firestore에서 가져온 데이터에는 isInitialDemo가 없을 수 있으므로 기본값 처리
+                isInitialDemo: item.isInitialDemo === undefined ? false : item.isInitialDemo,
+                // Firestore Timestamp 객체를 ISO 문자열로 변환 (선택 사항)
+                createdAt: item.createdAt && item.createdAt.toDate ? item.createdAt.toDate().toISOString() : (item.createdAt || null),
+                updatedAt: item.updatedAt && item.updatedAt.toDate ? item.updatedAt.toDate().toISOString() : (item.updatedAt || null)
             }));
 
             const jsonString = JSON.stringify(exportData, null, 2);
@@ -1673,12 +1699,12 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'aion_content.json';
+            a.download = 'aion_content_firestore.json'; // 파일명 변경
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('콘텐츠가 aion_content.json 파일로 내보내졌습니다.');
+            showToast('콘텐츠가 aion_content_firestore.json 파일로 내보내졌습니다.');
         }
 
         if (isAdminMode && exportBtnSidebar) {
@@ -1689,48 +1715,44 @@
         }
 
 
-        // --- 페이지 로드 시 실행 ---
-        async function initializeApp() {
-            if (isAdminMode) {
-                if(exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'block';
-                if(exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'block';
-                allContentData = getStoredData(USER_UPLOADS_KEY); 
+        // --- 페이지 로드 시 실행 (Firestore 리스너 설정) ---
+        function initializeAppWithFirestore() {
+            // Firestore 'contentItems' 컬렉션에 대한 실시간 리스너 설정
+            // 정렬은 필요에 따라 추가 (예: .orderBy('createdAt', 'desc'))
+            db.collection('contentItems')
+              .orderBy('createdAt', 'desc') // 예: 최신순 정렬
+              .onSnapshot((querySnapshot) => {
+                const itemsFromFirestore = [];
+                querySnapshot.forEach((doc) => {
+                    // 문서 ID(doc.id)와 데이터(doc.data())를 함께 저장
+                    // 기존 itemId 필드가 있다면 그것을 사용하고, 없다면 Firestore 문서 ID를 itemId로 사용
+                    itemsFromFirestore.push({ ...doc.data(), itemId: doc.data().itemId || doc.id, id: doc.id }); 
+                });
+                allContentData = itemsFromFirestore; // 전역 변수 업데이트
+                console.log("Data from Firestore (realtime): ", allContentData);
+                renderPageContent(); // UI 다시 그리기
+              }, (error) => {
+                console.error("Error fetching data from Firestore: ", error);
+                showToast('콘텐츠를 불러오는데 실패했습니다 (Firestore 오류).');
+                allContentData = []; // 오류 시 데이터 초기화
                 renderPageContent();
+              });
+
+            // 관리자 모드 관련 UI 설정 등은 여기서 계속 처리 가능
+            if (isAdminMode) {
+                 if(exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'block';
+                 if(exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'block';
             } else {
                 if (uploadSection) uploadSection.style.display = 'none';
-                // 탐색 메뉴가 없으므로 해당 DOM 요소도 없을 수 있음 (안전하게 확인)
-                const discoverNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="discover"]');
-                if(discoverNavItemDesktop) discoverNavItemDesktop.style.display = 'none';
-                const discoverNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="discover"]');
-                if(discoverNavItemMobile) discoverNavItemMobile.style.display = 'none';
-
+                if(uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
+                if(uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
                 if (exportContentButtonContainerSidebar) exportContentButtonContainerSidebar.style.display = 'none';
                 if (exportContentButtonContainerMobileSidebar) exportContentButtonContainerMobileSidebar.style.display = 'none';
-
-                try {
-                    const jsonUrl = 'aion_content.json'; 
-                    const response = await fetch(jsonUrl); 
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                             console.warn(`${jsonUrl} not found. Displaying only demo content or empty sections.`);
-                             allContentData = []; 
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status} for ${jsonUrl}`);
-                        }
-                    } else {
-                        allContentData = await response.json();
-                    }
-                } catch (error) {
-                    console.error(`Could not load or parse aion_content.json:`, error); 
-                    showToast('콘텐츠를 불러오는데 실패했습니다. (오류: ' + error.message + ')');
-                    allContentData = []; 
-                }
-                renderPageContent();
             }
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            initializeApp();
+            initializeAppWithFirestore(); // Firestore 초기화 함수 호출
         });
 
     </script>
