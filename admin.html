@@ -70,6 +70,12 @@
         let unsubscribeLikedItems = null;
         let unsubscribeSubscribedArtists = null;
 
+        // --- Predefined options for upload form ---
+        const predefinedThemes = ["사랑", "우정", "이별", "희망", "꿈", "여행", "청춘", "위로", "그리움", "자연", "일상", "파티"];
+        const predefinedGenres = ["발라드", "댄스", "팝", "K-Pop", "힙합", "R&B/Soul", "록", "메탈", "일렉트로닉", "재즈", "클래식", "포크", "인디", "트로트", "OST", "뉴에이지", "CCM"];
+        const predefinedMoods = ["신나는", "잔잔한", "몽환적인", "슬픈", "행복한", "로맨틱한", "긴장감있는", "평화로운", "활기찬", "감성적인", "웅장한", "경쾌한", "어두운"];
+
+
         onAuthStateChanged(auth, async (currentUser) => {
             console.log("onAuthStateChanged triggered (Admin). User:", currentUser ? currentUser.uid : 'null', "App Initialized:", appInitialized);
             const previousUserId = userId;
@@ -95,7 +101,8 @@
                 }
             }
 
-            setupAdminUI(); // 네비게이션 메뉴 아이템 표시/숨김만 처리
+            setupAdminUI(); 
+            populateUploadFormOptions(); // Populate new select fields
 
             if (!appInitialized) {
                 appInitialized = true;
@@ -133,7 +140,7 @@
         async function initializeAppLogic() {
             console.log("initializeAppLogic running (Admin). User ID:", userId, "Admin:", isAdminMode);
             await handleInitialDataImport(); 
-            setupEventListeners(); // setInitialActiveSection 포함
+            setupEventListeners(); 
             if (userId) { 
                 loadAllDataAndRender();
             }
@@ -149,8 +156,6 @@
         }
 
         function setupAdminUI() {
-            // 이 함수는 네비게이션 메뉴 아이템의 표시/숨김만 담당합니다.
-            // 실제 섹션의 display는 switchSection에서 관리합니다.
             const uploadNavItemDesktop = document.querySelector('#desktopSidebar .nav-item[data-section="upload"]');
             const uploadNavItemMobile = document.querySelector('#mobileSidebar .nav-item[data-section="upload"]');
             
@@ -161,7 +166,6 @@
             } else {
                 if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
                 if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
-                // 관리자가 아닐 때, 혹시 'upload' 섹션이 활성화되어 있다면 홈으로 전환
                 const uploadSec = document.getElementById('upload');
                 if (uploadSec && uploadSec.classList.contains('active')) {
                     switchSection('home'); 
@@ -238,13 +242,11 @@
         function setInitialActiveSection() {
             if (!desktopSidebar || !mobileSidebar) { initializeMenuElements(); if (!desktopSidebar || !mobileSidebar) return; }
             
-            // 모든 섹션 숨기기
             document.querySelectorAll('.content-section').forEach(section => {
                 section.style.display = 'none';
                 section.classList.remove('active');
             });
 
-            // 홈 섹션만 표시
             const homeSection = document.getElementById('home');
             if (homeSection) { 
                 homeSection.classList.add('active'); 
@@ -321,6 +323,16 @@
             const uploadContentTypeSelect = document.getElementById('uploadContentType');
             if (uploadContentTypeSelect) { uploadContentTypeSelect.addEventListener('change', toggleUploadFields); toggleUploadFields(); }
 
+            // Event listeners for new checkbox groups to update tags
+            document.getElementById('uploadThemesContainer')?.addEventListener('change', updateUploadTagsFromSelections);
+            document.getElementById('uploadGenresContainer')?.addEventListener('change', updateUploadTagsFromSelections);
+            document.getElementById('uploadMoodsContainer')?.addEventListener('change', updateUploadTagsFromSelections);
+            document.getElementById('uploadTags')?.addEventListener('input', () => {
+                // This ensures that if the user manually types, the automatic update doesn't immediately overwrite it
+                // A more sophisticated approach might be needed if complex interaction is desired
+            });
+
+
             const editItemForm = document.getElementById('editItemForm');
             if (editItemForm) editItemForm.addEventListener('submit', handleEditFormSubmit);
             const editYoutubeLinkInput = document.getElementById('editYoutubeLink');
@@ -389,7 +401,6 @@
             updateThumbnailPreview(youtubeLink, 'editThumbnailPreview');
         }
 
-
         const toastMessageElement = document.getElementById('toastMessage');
         function showToast(message, isError = false) {
             if (!toastMessageElement) return;
@@ -406,11 +417,22 @@
         const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
 
         function createContentItemHTML(itemData) {
-            let tagsHTML = itemData.tags ? itemData.tags.split(',').map(tag => `#${tag.trim()}`).join(' ') : '';
-            if (itemData.genre) tagsHTML += ` <span class="text-purple-400">#${itemData.genre}</span>`;
-            if (itemData.mood) tagsHTML += ` <span class="text-green-300">#${itemData.mood}</span>`;
+            let tagsHTML = '';
+            const allTags = [];
+            if (itemData.themes && Array.isArray(itemData.themes)) allTags.push(...itemData.themes);
+            if (itemData.genres && Array.isArray(itemData.genres)) allTags.push(...itemData.genres);
+            if (itemData.moods && Array.isArray(itemData.moods)) allTags.push(...itemData.moods);
+            if (itemData.tags) { // Manual tags
+                 const manualTags = itemData.tags.split(',').map(t => t.trim()).filter(t => t);
+                 allTags.push(...manualTags);
+            }
+            
+            tagsHTML = [...new Set(allTags)].map(tag => `#${tag.trim()}`).join(' ');
+
+
             if (itemData.isInstrumental) tagsHTML += ` <span class="text-cyan-400">#Instrumental</span>`;
             if (typeof itemData.views === 'number') tagsHTML += ` <span class="text-yellow-300 ml-2"><i class="fas fa-eye text-xs"></i> ${itemData.views}</span>`;
+
 
             let actionButtonsHTML = `<div class="item-action-icon-wrapper">`;
             if (userId && !userId.startsWith('guest-')) {
@@ -446,6 +468,7 @@
                 </div>
                 <span class="item-tags neon-accent">${tagsHTML}</span>`;
         }
+
         function renderContentItem(itemData, container) { 
             if (!container) return;
             const newItemDiv = document.createElement('div');
@@ -489,9 +512,18 @@
             const title = document.getElementById('uploadTitle').value.trim();
             const youtubeLink = document.getElementById('uploadYoutubeLink').value.trim();
             const contentType = document.getElementById('uploadContentType').value;
-            const tags = document.getElementById('uploadTags').value.trim();
-            const genre = document.getElementById('uploadGenre').value.trim();
-            const mood = document.getElementById('uploadMood').value.trim();
+            
+            const selectedThemes = Array.from(document.querySelectorAll('#uploadThemesContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedGenres = Array.from(document.querySelectorAll('#uploadGenresContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedMoods = Array.from(document.querySelectorAll('#uploadMoodsContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            
+            const manualTags = document.getElementById('uploadTags').value.trim()
+                                .split(',')
+                                .map(tag => tag.trim())
+                                .filter(tag => tag && !selectedThemes.includes(tag) && !selectedGenres.includes(tag) && !selectedMoods.includes(tag));
+
+            const allTagsCombined = [...new Set([...selectedThemes, ...selectedGenres, ...selectedMoods, ...manualTags])].join(',');
+
             const isInstrumental = document.getElementById('uploadIsInstrumental').checked;
             const aiMusicArtist = document.getElementById('uploadAiMusicArtist')?.value.trim();
             const aiTool = document.getElementById('uploadAiTool')?.value.trim();
@@ -503,7 +535,12 @@
             if (!youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
 
             const newItemData = {
-                title, youtubeId, contentType, tags, genre, mood, isInstrumental,
+                title, youtubeId, contentType, 
+                themes: selectedThemes, // Store as array
+                genres: selectedGenres, // Store as array
+                moods: selectedMoods,   // Store as array
+                tags: manualTags.join(','), // Store only manually added, distinct tags as comma-separated string
+                isInstrumental,
                 aiMusicArtist: contentType === 'ai-music' ? aiMusicArtist : null,
                 aiTool: contentType === 'ai-mv' ? aiTool : null,
                 views: 0, isRecommended: false, createdAt: serverTimestamp(), uploaderId: userId
@@ -514,6 +551,7 @@
                 showToast("콘텐츠가 성공적으로 업로드되었습니다!");
                 document.getElementById('uploadForm').reset();
                 updateThumbnailPreview('', 'thumbnailPreview'); 
+                updateUploadTagsFromSelections(); // Clear tags field
                 switchSection('home'); 
             } catch (error) {
                 console.error("Error uploading content (Admin):", error);
@@ -527,9 +565,11 @@
 
             const title = document.getElementById('editTitle').value.trim();
             const youtubeLink = document.getElementById('editYoutubeLink').value.trim();
-            const tags = document.getElementById('editTags').value.trim();
-            const genre = document.getElementById('editGenre').value.trim();
-            const mood = document.getElementById('editMood').value.trim();
+            // For edit, we might simplify tag editing to a single text field, or replicate the checkbox logic.
+            // For now, keeping it simple with a text field for tags.
+            const tags = document.getElementById('editTags').value.trim(); 
+            const genre = document.getElementById('editGenre').value.trim(); // This was the old field, needs update if we want multi-select edit
+            const mood = document.getElementById('editMood').value.trim();   // This was the old field, needs update
             const isInstrumental = document.getElementById('editIsInstrumental').checked;
             const aiMusicArtist = document.getElementById('editAiMusicArtist')?.value.trim();
             const aiTool = document.getElementById('editAiTool')?.value.trim();
@@ -541,8 +581,13 @@
             const itemToEdit = allContentData.find(item => item.itemId === currentEditingItemId);
             if (!itemToEdit) { showToast("수정할 항목을 찾을 수 없습니다.", true); return; }
 
+            // TODO: Update edit form to handle new multi-select fields (themes, genres, moods)
+            // For now, it will save the old single genre/mood and combined tags
             const updatedItemData = {
-                title, youtubeId, tags, genre, mood, isInstrumental,
+                title, youtubeId, tags, 
+                genre: genre, // Preserve old structure for now or update to array if edit form is changed
+                mood: mood,   // Preserve old structure for now or update to array
+                isInstrumental,
                 aiMusicArtist: itemToEdit.contentType === 'ai-music' ? aiMusicArtist : itemToEdit.aiMusicArtist, 
                 aiTool: itemToEdit.contentType === 'ai-mv' ? aiTool : itemToEdit.aiTool, 
             };
@@ -617,9 +662,20 @@
             document.getElementById('editTitle').value = item.title || '';
             document.getElementById('editYoutubeLink').value = item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '';
             updateThumbnailPreview(item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '', 'editThumbnailPreview');
-            document.getElementById('editTags').value = item.tags || '';
-            document.getElementById('editGenre').value = item.genre || '';
-            document.getElementById('editMood').value = item.mood || '';
+            
+            // Consolidate all tags (themes, genres, moods, manual tags) into the single editTags field for now
+            const allDisplayTags = [];
+            if (item.themes && Array.isArray(item.themes)) allDisplayTags.push(...item.themes);
+            if (item.genres && Array.isArray(item.genres)) allDisplayTags.push(...item.genres);
+            if (item.moods && Array.isArray(item.moods)) allDisplayTags.push(...item.moods);
+            if (item.tags) allDisplayTags.push(...item.tags.split(',').map(t=>t.trim()).filter(t=>t));
+            document.getElementById('editTags').value = [...new Set(allDisplayTags)].join(', ') || '';
+
+            // For simplicity, the old single genre/mood fields are populated. 
+            // A more complex edit form would be needed to manage multi-selects during edit.
+            document.getElementById('editGenre').value = Array.isArray(item.genres) ? item.genres.join(', ') : (item.genre || '');
+            document.getElementById('editMood').value = Array.isArray(item.moods) ? item.moods.join(', ') : (item.mood || '');
+            
             document.getElementById('editIsInstrumental').checked = item.isInstrumental || false;
             
             const aiMusicArtistField = document.getElementById('editAiMusicArtistField');
@@ -723,6 +779,58 @@
         async function toggleArtistSubscription(artistName) { if (!userId || userId.startsWith('guest-') || !artistName || artistName === 'N/A') { showToast('유효한 아티스트 이름이 아니거나 로그인이 필요합니다.', true); return; } const subRef = doc(db, getUserSubscribedArtistsCollectionPath(userId), artistName); try { if (userSubscribedArtists.has(artistName)) { await deleteDoc(subRef); showToast(`${artistName} 구독을 취소했습니다.`); } else { await setDoc(subRef, { subscribedAt: serverTimestamp(), artistName: artistName }); showToast(`${artistName}을(를) 구독했습니다.`); } } catch (error) { console.error("Error toggling subscription:", error); showToast("구독 처리 중 오류.", true); } }
         function renderSubscribedArtists() { if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return; clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "구독한 아티스트를 보려면 로그인해주세요."; } return; } if (userSubscribedArtists.size > 0) { if(subscribedArtistsPlaceholder) subscribedArtistsPlaceholder.classList.add('hidden'); userSubscribedArtists.forEach(artistName => { const div = document.createElement('div'); div.className = 'flex items-center justify-between p-2 glassmorphism rounded-md hover:bg-purple-700/20'; const nameSpan = document.createElement('span'); nameSpan.className = 'text-sm truncate'; nameSpan.textContent = artistName; const unsubscribeButton = document.createElement('button'); unsubscribeButton.className = 'text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-700/20 flex-shrink-0'; unsubscribeButton.textContent = '구독 취소'; unsubscribeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleArtistSubscription(artistName); }); div.appendChild(nameSpan); div.appendChild(unsubscribeButton); subscribedArtistsContainer.appendChild(div); }); } else { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "아직 구독한 아티스트가 없습니다."; } } }
 
+        // --- Helper function to populate checkbox groups ---
+        function populateCheckboxGroup(containerId, items, groupName) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = ''; // Clear existing options
+            items.forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 p-2 rounded-md hover:bg-purple-700/20 cursor-pointer form-checkbox-label';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = groupName;
+                checkbox.value = item;
+                checkbox.className = 'form-checkbox text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500';
+                
+                const span = document.createElement('span');
+                span.textContent = item;
+                span.className = 'text-sm';
+                
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
+        }
+
+        function populateUploadFormOptions() {
+            populateCheckboxGroup('uploadThemesContainer', predefinedThemes, 'uploadTheme');
+            populateCheckboxGroup('uploadGenresContainer', predefinedGenres, 'uploadGenre');
+            populateCheckboxGroup('uploadMoodsContainer', predefinedMoods, 'uploadMood');
+            updateUploadTagsFromSelections(); // Initial call to set tags
+        }
+        
+        function updateUploadTagsFromSelections() {
+            const themes = Array.from(document.querySelectorAll('#uploadThemesContainer input:checked')).map(cb => cb.value);
+            const genres = Array.from(document.querySelectorAll('#uploadGenresContainer input:checked')).map(cb => cb.value);
+            const moods = Array.from(document.querySelectorAll('#uploadMoodsContainer input:checked')).map(cb => cb.value);
+            
+            const uploadTagsInput = document.getElementById('uploadTags');
+            if (!uploadTagsInput) return;
+
+            // Preserve manually entered tags that are not part of the selections
+            const currentManualTags = uploadTagsInput.value.split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag && !themes.includes(tag) && !genres.includes(tag) && !moods.includes(tag));
+
+            const allSelectedTags = [...new Set([...themes, ...genres, ...moods])];
+            
+            const combinedTags = [...new Set([...allSelectedTags, ...currentManualTags])];
+
+            uploadTagsInput.value = combinedTags.join(', ');
+        }
+
     </script>
 
     <style>
@@ -784,8 +892,8 @@
         .thumbnail-image-container { width: 100%; overflow: hidden; border-radius: 0.375rem; aspect-ratio: 16 / 9; margin-bottom: 0.25rem;  } 
         .thumbnail-image { width: 100%; height: 100%; object-fit: cover; } 
 
-        /* 관리자용 업로드 폼 스타일 */
-        .form-input, .form-select, .form-textarea, .form-checkbox {
+        /* Admin upload form styles */
+        .form-input, .form-select, .form-textarea {
             background-color: rgba(0,0,0,0.3);
             border: 1px solid rgba(138, 43, 226, 0.5);
             border-radius: 0.375rem; /* rounded-md */
@@ -803,7 +911,35 @@
             font-weight: 500; /* font-medium */
             display: block;
         }
-        .form-checkbox { width: auto; margin-right: 0.5rem;}
+        .form-checkbox { 
+            width: 1.15em; height: 1.15em; /* Adjust size as needed */
+            margin-right: 0.5rem;
+            border-radius: 0.25rem; /* Slightly rounded corners for checkboxes */
+        }
+        .form-checkbox:checked {
+            background-color: #8A2BE2; /* neon-accent */
+            border-color: #8A2BE2;
+        }
+        .form-checkbox-label { /* For styling the label containing checkbox and text */
+            display: inline-flex; /* Aligns checkbox and text nicely */
+            align-items: center;
+            padding: 0.375rem 0.5rem; /* py-1.5 px-2 */
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.2s ease;
+        }
+        .form-checkbox-label:hover {
+            background-color: rgba(138, 43, 226, 0.15); /* Slightly lighter hover */
+        }
+        .checkbox-group-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Responsive columns */
+            gap: 0.5rem; /* gap-2 */
+            padding: 0.5rem; /* p-2 */
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 0.375rem;
+            max-height: 200px; /* Limit height and make scrollable */
+            overflow-y: auto;
+        }
 
 
     </style>
@@ -938,13 +1074,13 @@
                 <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6">새 콘텐츠 업로드</h2>
                 <form id="uploadForm" class="glassmorphism p-6 rounded-lg space-y-6 max-w-2xl mx-auto">
                     <div>
-                        <label for="uploadTitle" class="form-label">제목 <span class="text-red-500">*</span></label>
-                        <input type="text" id="uploadTitle" name="uploadTitle" class="form-input" required>
-                    </div>
-                    <div>
                         <label for="uploadYoutubeLink" class="form-label">YouTube 링크 <span class="text-red-500">*</span></label>
                         <input type="url" id="uploadYoutubeLink" name="uploadYoutubeLink" class="form-input" placeholder="https://www.youtube.com/watch?v=..." required>
                         <img id="thumbnailPreview" src="https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기" alt="YouTube Thumbnail Preview" class="mt-2 rounded-lg w-full max-w-xs aspect-video object-cover">
+                    </div>
+                    <div>
+                        <label for="uploadTitle" class="form-label">제목 <span class="text-red-500">*</span></label>
+                        <input type="text" id="uploadTitle" name="uploadTitle" class="form-input" required>
                     </div>
                      <div>
                         <label for="uploadContentType" class="form-label">콘텐츠 유형 <span class="text-red-500">*</span></label>
@@ -968,23 +1104,33 @@
                             <input type="text" id="uploadAiTool" name="uploadAiTool" class="form-input" placeholder="예: Runway Gen-2, Kaiber AI">
                         </div>
                     </div>
+
                     <div>
-                        <label for="uploadTags" class="form-label">태그 (쉼표로 구분)</label>
-                        <input type="text" id="uploadTags" name="uploadTags" class="form-input" placeholder="예: #KPOP, #발라드, #여름">
+                        <label for="uploadThemesContainer" class="form-label">주제 (다중 선택 가능)</label>
+                        <div id="uploadThemesContainer" class="checkbox-group-container scrollable-content">
+                            </div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="uploadGenre" class="form-label">장르</label>
-                            <input type="text" id="uploadGenre" name="uploadGenre" class="form-input" placeholder="예: 댄스, 힙합, R&B">
-                        </div>
-                        <div>
-                            <label for="uploadMood" class="form-label">분위기</label>
-                            <input type="text" id="uploadMood" name="uploadMood" class="form-input" placeholder="예: 신나는, 잔잔한, 몽환적인">
-                        </div>
+                    
+                    <div>
+                        <label for="uploadGenresContainer" class="form-label">장르 (다중 선택 가능)</label>
+                        <div id="uploadGenresContainer" class="checkbox-group-container scrollable-content">
+                            </div>
                     </div>
+
+                    <div>
+                        <label for="uploadMoodsContainer" class="form-label">분위기 (다중 선택 가능)</label>
+                        <div id="uploadMoodsContainer" class="checkbox-group-container scrollable-content">
+                            </div>
+                    </div>
+                    
+                    <div>
+                        <label for="uploadTags" class="form-label">태그 (선택된 주제/장르/분위기 자동 포함, 추가 입력 가능)</label>
+                        <input type="text" id="uploadTags" name="uploadTags" class="form-input" placeholder="예: #KPOP, #여름 (자동완성 및 직접입력)">
+                    </div>
+
                     <div class="flex items-center">
                         <input type="checkbox" id="uploadIsInstrumental" name="uploadIsInstrumental" class="form-checkbox">
-                        <label for="uploadIsInstrumental" class="text-sm">Instrumental (연주곡)</label>
+                        <label for="uploadIsInstrumental" class="text-sm ml-2">Instrumental (연주곡)</label>
                     </div>
                     <button type="submit" class="w-full neon-accent-bg text-white font-semibold py-3 rounded-lg hover:bg-purple-700 transition-colors">업로드</button>
                 </form>
@@ -1022,8 +1168,7 @@
         <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-2xl modal-content overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-semibold">콘텐츠 수정</h3>
-                <button id="cancelEditItem" class="text-gray-400 hover:text-white text-2xl">×</button>
-            </div>
+                <button id="cancelEditItemButtonInModal" class="text-gray-400 hover:text-white text-2xl">×</button> </div>
             <form id="editItemForm" class="space-y-4">
                 <div>
                     <label for="editTitle" class="form-label">제목 <span class="text-red-500">*</span></label>
@@ -1042,23 +1187,22 @@
                     <label for="editAiTool" class="form-label">AI MV 생성 도구</label>
                     <input type="text" id="editAiTool" name="editAiTool" class="form-input">
                 </div>
-                <div>
-                    <label for="editTags" class="form-label">태그</label>
+                <div> <label for="editTags" class="form-label">태그</label>
                     <input type="text" id="editTags" name="editTags" class="form-input">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="editGenre" class="form-label">장르</label>
-                        <input type="text" id="editGenre" name="editGenre" class="form-input">
+                        <label for="editGenre" class="form-label">장르 (기존)</label>
+                        <input type="text" id="editGenre" name="editGenre" class="form-input" placeholder="향후 다중 선택으로 변경 예정">
                     </div>
                     <div>
-                        <label for="editMood" class="form-label">분위기</label>
-                        <input type="text" id="editMood" name="editMood" class="form-input">
+                        <label for="editMood" class="form-label">분위기 (기존)</label>
+                        <input type="text" id="editMood" name="editMood" class="form-input" placeholder="향후 다중 선택으로 변경 예정">
                     </div>
                 </div>
                 <div class="flex items-center">
                     <input type="checkbox" id="editIsInstrumental" name="editIsInstrumental" class="form-checkbox">
-                    <label for="editIsInstrumental" class="text-sm">Instrumental (연주곡)</label>
+                    <label for="editIsInstrumental" class="text-sm ml-2">Instrumental (연주곡)</label>
                 </div>
                 <div class="flex justify-end space-x-3 pt-4">
                     <button type="button" id="cancelEditItemButtonInModal" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button> 
