@@ -70,374 +70,190 @@
         let unsubscribeLikedItems = null;
         let unsubscribeSubscribedArtists = null;
 
-        // --- Predefined options for upload/edit form ---
         const predefinedThemes = ["사랑", "우정", "이별", "희망", "꿈", "여행", "청춘", "위로", "그리움", "자연", "일상", "파티"];
         const predefinedGenres = ["발라드", "댄스", "팝", "K-Pop", "힙합", "R&B/Soul", "록", "메탈", "일렉트로닉", "재즈", "클래식", "포크", "인디", "트로트", "OST", "뉴에이지", "CCM"];
         const predefinedMoods = ["신나는", "잔잔한", "몽환적인", "슬픈", "행복한", "로맨틱한", "긴장감있는", "평화로운", "활기찬", "감성적인", "웅장한", "경쾌한", "어두운"];
 
-
         onAuthStateChanged(auth, async (currentUser) => {
-            console.log("onAuthStateChanged triggered (Admin). User:", currentUser ? currentUser.uid : 'null', "App Initialized:", appInitialized);
             const previousUserId = userId;
-
-            if (currentUser) {
-                userId = currentUser.uid;
-                isAdminMode = (userId === ADMIN_UID);
-            } else {
-                userId = null;
-                isAdminMode = false;
-            }
-            console.log(`Auth state determined (Admin). User ID: ${userId}, Admin: ${isAdminMode}`);
-
+            if (currentUser) { userId = currentUser.uid; isAdminMode = (userId === ADMIN_UID); } 
+            else { userId = null; isAdminMode = false; }
+            
             document.getElementById('profileUserName').textContent = userId ? `${isAdminMode ? '관리자' : '사용자'} (${userId.substring(0, 6)}...)` : '로그인 필요';
             document.getElementById('profileUserId').textContent = `User ID: ${userId || 'N/A'}`;
             const adminUserIdDisplayEl = document.getElementById('adminUserIdDisplay');
-            if(adminUserIdDisplayEl) {
-                if(isAdminMode) {
-                    adminUserIdDisplayEl.textContent = `관리자 모드 활성 (UID: ${userId})`;
-                    adminUserIdDisplayEl.classList.remove('hidden');
-                } else {
-                    adminUserIdDisplayEl.classList.add('hidden');
-                }
-            }
+            if(adminUserIdDisplayEl) { adminUserIdDisplayEl.classList.toggle('hidden', !isAdminMode); if(isAdminMode) adminUserIdDisplayEl.textContent = `관리자 모드 활성 (UID: ${userId})`;}
 
-            setupAdminUI(); 
-            populateUploadFormOptions(); 
-            populateEditFormOptions(); 
+            setupAdminUI(); populateUploadFormOptions(); populateEditFormOptions(); 
 
             if (!appInitialized) {
                 appInitialized = true;
-                console.log("App initializing (Admin). Current user for init:", userId);
                 if (!currentUser && !(typeof __initial_auth_token !== 'undefined' && __initial_auth_token)) {
-                    console.log("No persisted user and no initial token, attempting sign-in (Admin).");
                     await attemptSignIn(); 
                 } else { 
-                    console.log("User exists or token flow active. Initializing app logic directly (Admin).");
                     await initializeAppLogic(); 
                 }
-            } else { 
-                if (userId !== previousUserId) { 
-                    console.log("User changed (Admin). Reloading data and UI.");
-                    loadAllDataAndRender();
-                }
+            } else if (userId !== previousUserId) { 
+                loadAllDataAndRender();
             }
         });
 
         async function attemptSignIn() {
-            console.log("Attempting sign-in (Admin)...");
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    console.log("Attempting sign in with custom token (Admin)...");
                     await signInWithCustomToken(auth, __initial_auth_token);
-                } else if (!auth.currentUser) {
-                    console.log("No custom token and no current user. Admin app may require specific login.");
-                }
-            } catch (error) {
-                console.error("Error during sign-in attempt in attemptSignIn() (Admin):", error);
-                showToast("로그인 시도 중 오류: " + error.message, true);
-            }
+                } else if (!auth.currentUser) { console.log("Admin app may require specific login."); }
+            } catch (error) { console.error("Error during sign-in (Admin):", error); showToast("로그인 오류: " + error.message, true); }
         }
 
         async function initializeAppLogic() {
-            console.log("initializeAppLogic running (Admin). User ID:", userId, "Admin:", isAdminMode);
-            await handleInitialDataImport(); 
-            setupEventListeners(); 
-            if (userId) { 
-                loadAllDataAndRender();
-            }
+            await handleInitialDataImport(); setupEventListeners(); 
+            if (userId) { loadAllDataAndRender(); }
         }
-
-        async function handleInitialDataImport() {
-            console.log("Checking for initial data import (Admin). isAdminMode:", isAdminMode);
-            if (!isAdminMode) {
-                console.log("Not an admin, skipping initial data import (Admin).");
-                return;
-            }
-            console.log("Admin mode: Initial data import logic placeholder. Implement as needed.");
-        }
+        async function handleInitialDataImport() { if (!isAdminMode) return; console.log("Admin mode: Initial data import placeholder.");}
 
         function setupAdminUI() {
-            const uploadNavItemDesktop = document.querySelector('#desktopSidebar .nav-item[data-section="upload"]');
-            const uploadNavItemMobile = document.querySelector('#mobileSidebar .nav-item[data-section="upload"]');
-            
-            if (isAdminMode) {
-                if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'flex';
-                if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'flex';
-                console.log("Admin UI (menu items) enabled.");
-            } else {
-                if (uploadNavItemDesktop) uploadNavItemDesktop.style.display = 'none';
-                if (uploadNavItemMobile) uploadNavItemMobile.style.display = 'none';
-                const uploadSec = document.getElementById('upload');
-                if (uploadSec && uploadSec.classList.contains('active')) {
-                    switchSection('home'); 
-                }
-                console.log("Admin UI (menu items) disabled.");
-            }
+            const uploadNavDesktop = document.querySelector('#desktopSidebar .nav-item[data-section="upload"]');
+            const uploadNavMobile = document.querySelector('#mobileSidebar .nav-item[data-section="upload"]');
+            if (uploadNavDesktop) uploadNavDesktop.style.display = isAdminMode ? 'flex' : 'none';
+            if (uploadNavMobile) uploadNavMobile.style.display = isAdminMode ? 'flex' : 'none';
+            if (!isAdminMode && document.getElementById('upload')?.classList.contains('active')) { switchSection('home'); }
         }
 
         function loadAllDataAndRender() {
-            if (!userId) {
-                console.log("loadAllDataAndRender (Admin): userId is null. Aborting data load.");
-                allContentData = []; userPlaylists = []; userLikedItemIds.clear(); userSubscribedArtists.clear();
-                if (unsubscribeContentItems) unsubscribeContentItems(); if (unsubscribePlaylists) unsubscribePlaylists(); if (unsubscribeLikedItems) unsubscribeLikedItems(); if (unsubscribeSubscribedArtists) unsubscribeSubscribedArtists();
-                renderPageContent(); renderMyPlaylists(); renderLikedSongs(); renderSubscribedArtists();
-                return; 
-            }
-
-            console.log("loadAllDataAndRender called (Admin). Current userId:", userId, "isAdminMode:", isAdminMode);
-
+            if (!userId) { /* Clear data and UI */ return; }
             if (unsubscribeContentItems) unsubscribeContentItems(); 
-            if (unsubscribePlaylists) unsubscribePlaylists(); 
-            if (unsubscribeLikedItems) unsubscribeLikedItems(); 
+            unsubscribeContentItems = onSnapshot(query(collection(db, getContentItemsCollectionPath()), orderBy('createdAt', 'desc')), (snap) => {
+                allContentData = snap.docs.map(d => ({ ...d.data(), itemId: d.id })); renderPageContent();
+            }, (err) => { console.error("Error content (Admin):", err); showToast('콘텐츠 로딩 실패', true); });
+
+            if (unsubscribePlaylists) unsubscribePlaylists();
+            unsubscribePlaylists = onSnapshot(query(collection(db, getUserPlaylistsCollectionPath(userId)), orderBy('createdAt', 'desc')), (snap) => {
+                userPlaylists = snap.docs.map(d => ({ ...d.data(), id: d.id })); renderMyPlaylists();
+                if (currentViewingPlaylistId && playlistDetailModal && !playlistDetailModal.classList.contains('hidden')) {
+                    const p = userPlaylists.find(pl => pl.id === currentViewingPlaylistId); if (p) openPlaylistDetailModal(currentViewingPlaylistId); else closePlaylistDetailModal();
+                }
+            }, (err) => { console.error("Error playlists (Admin):", err); });
+
+            if (unsubscribeLikedItems) unsubscribeLikedItems();
+            unsubscribeLikedItems = onSnapshot(collection(db, getUserLikedItemsCollectionPath(userId)), (snap) => {
+                userLikedItemIds.clear(); snap.forEach(d => userLikedItemIds.add(d.id)); renderLikedSongs(); renderPageContent();
+            }, (err) => { console.error("Error liked (Admin):", err);});
+
             if (unsubscribeSubscribedArtists) unsubscribeSubscribedArtists();
-
-            const contentItemsQuery = query(collection(db, getContentItemsCollectionPath()), orderBy('createdAt', 'desc'));
-            unsubscribeContentItems = onSnapshot(contentItemsQuery, (querySnapshot) => {
-                allContentData = querySnapshot.docs.map(doc => ({ ...doc.data(), itemId: doc.id }));
-                console.log("Realtime: Content items updated (Admin). Count:", allContentData.length);
-                renderPageContent();
-            }, (error) => {
-                console.error("Error fetching content items (Admin): ", error);
-                showToast('콘텐츠 로딩 실패 (Admin): ' + error.code, true);
-                allContentData = []; renderPageContent();
-            });
-
-            if (userId) { 
-                const playlistsQuery = query(collection(db, getUserPlaylistsCollectionPath(userId)), orderBy('createdAt', 'desc'));
-                unsubscribePlaylists = onSnapshot(playlistsQuery, (qS) => {
-                    userPlaylists = qS.docs.map(d => ({ ...d.data(), id: d.id }));
-                    renderMyPlaylists();
-                    if (currentViewingPlaylistId && playlistDetailModal && !playlistDetailModal.classList.contains('hidden')) {
-                        const p = userPlaylists.find(pl => pl.id === currentViewingPlaylistId);
-                        if (p) openPlaylistDetailModal(currentViewingPlaylistId); else closePlaylistDetailModal();
-                    }
-                }, (err) => { console.error("Error fetching user playlists (Admin):", err); userPlaylists = []; renderMyPlaylists(); });
-
-                unsubscribeLikedItems = onSnapshot(collection(db, getUserLikedItemsCollectionPath(userId)), (qS) => {
-                    userLikedItemIds.clear(); qS.forEach(d => userLikedItemIds.add(d.id));
-                    renderLikedSongs(); renderPageContent();
-                }, (err) => { console.error("Error fetching liked items (Admin):", err); userLikedItemIds.clear(); renderLikedSongs(); });
-
-                unsubscribeSubscribedArtists = onSnapshot(collection(db, getUserSubscribedArtistsCollectionPath(userId)), (qS) => {
-                    userSubscribedArtists.clear(); qS.forEach(d => userSubscribedArtists.add(d.id));
-                    renderSubscribedArtists(); renderPageContent();
-                }, (err) => { console.error("Error fetching subscribed artists (Admin):", err); userSubscribedArtists.clear(); renderSubscribedArtists(); });
-            }
+            unsubscribeSubscribedArtists = onSnapshot(collection(db, getUserSubscribedArtistsCollectionPath(userId)), (snap) => {
+                userSubscribedArtists.clear(); snap.forEach(d => userSubscribedArtists.add(d.id)); renderSubscribedArtists(); renderPageContent();
+            }, (err) => { console.error("Error subscribed (Admin):", err); });
         }
         
-        const activeNavClass = 'neon-accent-bg';
-        const inactiveNavClass = 'hover:bg-purple-700/30';
-        let desktopSidebar, mobileSidebar, mobileSidebarOverlay, mobileMenuButton, closeMobileSidebarButton;
-        let aionLogoDesktop, aionLogoMobile; 
+        const activeNavClass = 'neon-accent-bg', inactiveNavClass = 'hover:bg-purple-700/30';
+        let desktopSidebar, mobileSidebar, mobileSidebarOverlay, mobileMenuButton, closeMobileSidebarButton, aionLogoDesktop, aionLogoMobile; 
 
         function initializeMenuElements() {
-            desktopSidebar = document.getElementById('desktopSidebar');
-            mobileSidebar = document.getElementById('mobileSidebar');
-            mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
-            mobileMenuButton = document.getElementById('mobileMenuButton');
-            closeMobileSidebarButton = document.getElementById('closeMobileSidebarButton');
-            aionLogoDesktop = document.getElementById('aionLogoDesktop');
-            aionLogoMobile = document.getElementById('aionLogoMobile');
+            desktopSidebar = desktopSidebar || document.getElementById('desktopSidebar'); mobileSidebar = mobileSidebar || document.getElementById('mobileSidebar');
+            mobileSidebarOverlay = mobileSidebarOverlay || document.getElementById('mobileSidebarOverlay'); mobileMenuButton = mobileMenuButton || document.getElementById('mobileMenuButton');
+            closeMobileSidebarButton = closeMobileSidebarButton || document.getElementById('closeMobileSidebarButton');
+            aionLogoDesktop = aionLogoDesktop || document.getElementById('aionLogoDesktop'); aionLogoMobile = aionLogoMobile || document.getElementById('aionLogoMobile');
         }
         
         function setInitialActiveSection() {
-            if (!desktopSidebar || !mobileSidebar) { initializeMenuElements(); if (!desktopSidebar || !mobileSidebar) return; }
-            
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.display = 'none';
-                section.classList.remove('active');
-            });
-
-            const homeSection = document.getElementById('home');
-            if (homeSection) { 
-                homeSection.classList.add('active'); 
-                homeSection.style.display = 'block'; 
-            } 
-            
-            document.querySelectorAll('#desktopSidebar .nav-item, #mobileSidebar .nav-item').forEach(nav => {
-                nav.classList.remove(activeNavClass);
-                nav.classList.add(inactiveNavClass);
-            });
-
-            const homeNavItemDesktop = desktopSidebar.querySelector('.nav-item[data-section="home"]'); 
-            const homeNavItemMobile = mobileSidebar.querySelector('.nav-item[data-section="home"]'); 
-            if (homeNavItemDesktop) { homeNavItemDesktop.classList.add(activeNavClass); homeNavItemDesktop.classList.remove(inactiveNavClass); } 
-            if (homeNavItemMobile) { homeNavItemMobile.classList.add(activeNavClass); homeNavItemMobile.classList.remove(inactiveNavClass); } 
+            initializeMenuElements();
+            document.querySelectorAll('.content-section').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+            const homeSection = document.getElementById('home'); if (homeSection) { homeSection.classList.add('active'); homeSection.style.display = 'block'; } 
+            updateNavActiveState('home');
         }
         
         function switchSection(sectionId) { 
-            if (sectionId === 'upload' && !isAdminMode) { 
-                showToast("관리자만 접근 가능합니다.", true); 
-                switchSection('home'); 
-                return;
-            }
-            document.querySelectorAll('.content-section').forEach(s => { 
-                s.classList.remove('active'); 
-                s.style.display = 'none'; 
-            });
-            const targetSection = document.getElementById(sectionId);
-            if (targetSection) { 
-                targetSection.style.display = 'block'; 
-                targetSection.classList.add('active'); 
-                console.log(`Switched to section: ${sectionId}, display: ${targetSection.style.display}`);
-            } else {
-                console.warn(`Target section "${sectionId}" not found during switch.`);
-            }
+            if (sectionId === 'upload' && !isAdminMode) { showToast("관리자만 접근 가능합니다.", true); switchSection('home'); return; }
+            document.querySelectorAll('.content-section').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+            const targetSection = document.getElementById(sectionId); if (targetSection) { targetSection.style.display = 'block'; targetSection.classList.add('active'); }
             updateNavActiveState(sectionId);
         }
 
         function updateNavActiveState(activeSectionId) {
-            if (!desktopSidebar || !mobileSidebar) return;
+            initializeMenuElements();
             document.querySelectorAll('#desktopSidebar .nav-item, #mobileSidebar .nav-item').forEach(nav => {
-                nav.classList.remove(activeNavClass); nav.classList.add(inactiveNavClass);
-                if (nav.dataset.section === activeSectionId) { nav.classList.add(activeNavClass); nav.classList.remove(inactiveNavClass); }
+                nav.classList.toggle(activeNavClass, nav.dataset.section === activeSectionId);
+                nav.classList.toggle(inactiveNavClass, nav.dataset.section !== activeSectionId);
             });
         }
 
         function setupEventListeners() {
-            initializeMenuElements();
-            setInitialActiveSection(); 
-
+            initializeMenuElements(); setInitialActiveSection(); 
             document.querySelectorAll('#desktopSidebar .nav-item, #mobileSidebar .nav-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault(); const sectionId = item.dataset.section;
-                    switchSection(sectionId); 
-                    if (mobileSidebar && !mobileSidebar.classList.contains('-translate-x-full')) closeMobileSidebar();
-                });
+                item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); if (mobileSidebar && !mobileSidebar.classList.contains('-translate-x-full')) closeMobileSidebar(); });
             });
-
             if (mobileMenuButton) mobileMenuButton.addEventListener('click', openMobileSidebar);
             if (closeMobileSidebarButton) closeMobileSidebarButton.addEventListener('click', closeMobileSidebar);
             if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
+            if (aionLogoDesktop) aionLogoDesktop.addEventListener('click', (e) => { e.preventDefault(); switchSection('home'); });
+            if (aionLogoMobile) aionLogoMobile.addEventListener('click', (e) => { e.preventDefault(); switchSection('home'); closeMobileSidebar(); });
 
-            if (aionLogoDesktop) {
-                aionLogoDesktop.addEventListener('click', (e) => { e.preventDefault(); switchSection('home'); });
-            }
-            if (aionLogoMobile) {
-                aionLogoMobile.addEventListener('click', (e) => { e.preventDefault(); switchSection('home'); closeMobileSidebar(); });
-            }
+            // Upload Form Listeners
+            document.getElementById('uploadForm')?.addEventListener('submit', handleUploadFormSubmit);
+            const uploadInputsToWatch = ['uploadYoutubeLink', 'uploadTitle', 'uploadContentType', 'uploadAiMusicArtist', 'uploadSingerName', 'uploadAiTool'];
+            uploadInputsToWatch.forEach(id => document.getElementById(id)?.addEventListener('input', updateUploadTagsFromSelections));
+            document.getElementById('uploadIsInstrumental')?.addEventListener('change', updateUploadTagsFromSelections);
+            ['uploadThemesContainer', 'uploadGenresContainer', 'uploadMoodsContainer'].forEach(id => document.getElementById(id)?.addEventListener('change', updateUploadTagsFromSelections));
+            document.getElementById('uploadTags')?.addEventListener('input', () => updateUploadTagsFromSelections(true)); // Pass true for manual input
+            document.getElementById('uploadContentType')?.addEventListener('change', toggleUploadFields);
+            toggleUploadFields(); // Initial call
 
-            const uploadForm = document.getElementById('uploadForm');
-            if (uploadForm) uploadForm.addEventListener('submit', handleUploadFormSubmit);
-            const uploadYoutubeLinkInput = document.getElementById('uploadYoutubeLink');
-            if (uploadYoutubeLinkInput) uploadYoutubeLinkInput.addEventListener('input', updateThumbnailPreviewFromUrlInput);
-            const uploadContentTypeSelect = document.getElementById('uploadContentType');
-            if (uploadContentTypeSelect) { uploadContentTypeSelect.addEventListener('change', toggleUploadFields); toggleUploadFields(); }
-
-            document.getElementById('uploadThemesContainer')?.addEventListener('change', updateUploadTagsFromSelections);
-            document.getElementById('uploadGenresContainer')?.addEventListener('change', updateUploadTagsFromSelections);
-            document.getElementById('uploadMoodsContainer')?.addEventListener('change', updateUploadTagsFromSelections);
-            document.getElementById('uploadTags')?.addEventListener('input', () => { /* Allow manual input */ });
-
-
-            const editItemForm = document.getElementById('editItemForm');
-            if (editItemForm) editItemForm.addEventListener('submit', handleEditFormSubmit);
-            const editYoutubeLinkInput = document.getElementById('editYoutubeLink');
-            if(editYoutubeLinkInput) editYoutubeLinkInput.addEventListener('input', updateEditThumbnailPreviewFromUrlInput);
-            const cancelEditItemButtonInModal = document.getElementById('cancelEditItemButtonInModal'); 
-            if(cancelEditItemButtonInModal) cancelEditItemButtonInModal.addEventListener('click', (e) => { e.preventDefault(); closeEditModal(); });
-            const editContentTypeSelect = document.getElementById('editContentType');
-            if (editContentTypeSelect) { editContentTypeSelect.addEventListener('change', toggleEditFields); }
-
-
-            document.getElementById('editThemesContainer')?.addEventListener('change', updateEditTagsFromSelections);
-            document.getElementById('editGenresContainer')?.addEventListener('change', updateEditTagsFromSelections);
-            document.getElementById('editMoodsContainer')?.addEventListener('change', updateEditTagsFromSelections);
-            document.getElementById('editTags')?.addEventListener('input', () => { /* Allow manual input */ });
-
-
-            const closeYoutubeModalButton = document.getElementById('closeYoutubeModalButton');
-            if(closeYoutubeModalButton) closeYoutubeModalButton.addEventListener('click', closeYoutubeModal);
-            const youtubeModalElement = document.getElementById('youtubeModal');
-            if(youtubeModalElement) youtubeModalElement.addEventListener('click', (event) => { if (event.target === youtubeModalElement) closeYoutubeModal(); });
-
-            const createPlaylistButton = document.getElementById('createPlaylistButton');
-            if(createPlaylistButton) createPlaylistButton.addEventListener('click', () => openCreatePlaylistModal());
-            const cancelCreatePlaylist = document.getElementById('cancelCreatePlaylist');
-            if(cancelCreatePlaylist) cancelCreatePlaylist.addEventListener('click', () => closeCreatePlaylistModal());
-            const confirmCreatePlaylist = document.getElementById('confirmCreatePlaylist');
-            if(confirmCreatePlaylist) confirmCreatePlaylist.addEventListener('click', handleConfirmCreatePlaylist);
-
-            const cancelAddToPlaylist = document.getElementById('cancelAddToPlaylist');
-            if(cancelAddToPlaylist) cancelAddToPlaylist.addEventListener('click', () => closeAddToPlaylistModal());
-            const confirmAddToPlaylist = document.getElementById('confirmAddToPlaylist');
-            if(confirmAddToPlaylist) confirmAddToPlaylist.addEventListener('click', handleConfirmAddToPlaylist);
-
-            const closePlaylistDetailModalButton = document.getElementById('closePlaylistDetailModal');
-            if(closePlaylistDetailModalButton) closePlaylistDetailModalButton.addEventListener('click', () => closePlaylistDetailModal());
-            const deletePlaylistButton = document.getElementById('deletePlaylistButton');
-            if(deletePlaylistButton) deletePlaylistButton.addEventListener('click', handleDeletePlaylist);
-
+            // Edit Form Listeners
+            document.getElementById('editItemForm')?.addEventListener('submit', handleEditFormSubmit);
+            const editInputsToWatch = ['editYoutubeLink', 'editTitle', 'editContentType', 'editAiMusicArtist', 'editSingerName', 'editAiTool'];
+            editInputsToWatch.forEach(id => document.getElementById(id)?.addEventListener('input', updateEditTagsFromSelections));
+            document.getElementById('editIsInstrumental')?.addEventListener('change', updateEditTagsFromSelections);
+            ['editThemesContainer', 'editGenresContainer', 'editMoodsContainer'].forEach(id => document.getElementById(id)?.addEventListener('change', updateEditTagsFromSelections));
+            document.getElementById('editTags')?.addEventListener('input', () => updateEditTagsFromSelections(true)); // Pass true for manual input
+            document.getElementById('editContentType')?.addEventListener('change', toggleEditFields);
+            document.getElementById('cancelEditItemButtonInModal')?.addEventListener('click', (e) => { e.preventDefault(); closeEditModal(); });
+            
+            // Other Modals and Global
+            document.getElementById('closeYoutubeModalButton')?.addEventListener('click', closeYoutubeModal);
+            document.getElementById('youtubeModal')?.addEventListener('click', (event) => { if (event.target === document.getElementById('youtubeModal')) closeYoutubeModal(); });
+            document.getElementById('createPlaylistButton')?.addEventListener('click', () => openCreatePlaylistModal());
+            document.getElementById('cancelCreatePlaylist')?.addEventListener('click', () => closeCreatePlaylistModal());
+            document.getElementById('confirmCreatePlaylist')?.addEventListener('click', handleConfirmCreatePlaylist);
+            document.getElementById('cancelAddToPlaylist')?.addEventListener('click', () => closeAddToPlaylistModal());
+            document.getElementById('confirmAddToPlaylist')?.addEventListener('click', handleConfirmAddToPlaylist);
+            document.getElementById('closePlaylistDetailModal')?.addEventListener('click', () => closePlaylistDetailModal());
+            document.getElementById('deletePlaylistButton')?.addEventListener('click', handleDeletePlaylist);
             document.body.addEventListener('click', handleContentInteraction);
         }
 
-        function openMobileSidebar() {
-            if (mobileSidebar && mobileSidebarOverlay) { mobileSidebar.classList.remove('-translate-x-full'); mobileSidebarOverlay.classList.remove('hidden'); }
-        }
-        function closeMobileSidebar() {
-            if (mobileSidebar && mobileSidebarOverlay) { mobileSidebar.classList.add('-translate-x-full'); mobileSidebarOverlay.classList.add('hidden'); }
-        }
+        function openMobileSidebar() { if (mobileSidebar && mobileSidebarOverlay) { mobileSidebar.classList.remove('-translate-x-full'); mobileSidebarOverlay.classList.remove('hidden'); } }
+        function closeMobileSidebar() { if (mobileSidebar && mobileSidebarOverlay) { mobileSidebar.classList.add('-translate-x-full'); mobileSidebarOverlay.classList.add('hidden'); } }
 
         const defaultThumbnail = 'https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기';
         const thumbnailErrorPlaceholder = 'https://placehold.co/300x180/330033/FFFFFF?text=썸네일+오류';
-
-        function getYouTubeId(url) {
-            if (!url) return ''; let videoId = '';
-            const patterns = [ /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^& \n<]{11})/, /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^? \n<]{11})/, /(?:https?:\/\/)?youtu\.be\/([^? \n<]{11})/, ];
-            for (const pattern of patterns) { const match = url.match(pattern); if (match && match[1]) { videoId = match[1]; break; } }
-            if (!videoId) console.warn("Could not extract YouTube ID from URL:", url); return videoId;
-        }
+        function getYouTubeId(url) { if (!url) return ''; let videoId = ''; const patterns = [ /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^& \n<]{11})/, /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^? \n<]{11})/, /(?:https?:\/\/)?youtu\.be\/([^? \n<]{11})/, ]; for (const pattern of patterns) { const match = url.match(pattern); if (match && match[1]) { videoId = match[1]; break; } } return videoId; }
         function getYouTubeThumbnailUrl(videoId) { return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : defaultThumbnail; }
-
-        function updateThumbnailPreview(url, previewElementId) {
-            const videoId = getYouTubeId(url);
-            const previewElement = document.getElementById(previewElementId);
-            if (previewElement) {
-                previewElement.src = getYouTubeThumbnailUrl(videoId);
-                previewElement.onerror = () => { previewElement.src = defaultThumbnail; };
-            }
-        }
-        function updateThumbnailPreviewFromUrlInput() {
-            const youtubeLink = document.getElementById('uploadYoutubeLink').value;
-            updateThumbnailPreview(youtubeLink, 'thumbnailPreview');
-        }
-        function updateEditThumbnailPreviewFromUrlInput() {
-            const youtubeLink = document.getElementById('editYoutubeLink').value;
-            updateThumbnailPreview(youtubeLink, 'editThumbnailPreview');
-        }
-
+        function updateThumbnailPreview(url, previewElId) { const el = document.getElementById(previewElId); if (el) { el.src = getYouTubeThumbnailUrl(getYouTubeId(url)); el.onerror = () => { el.src = defaultThumbnail; }; } }
+        function updateThumbnailPreviewFromUrlInput() { updateThumbnailPreview(document.getElementById('uploadYoutubeLink').value, 'thumbnailPreview'); }
+        function updateEditThumbnailPreviewFromUrlInput() { updateThumbnailPreview(document.getElementById('editYoutubeLink').value, 'editThumbnailPreview'); }
         const toastMessageElement = document.getElementById('toastMessage');
-        function showToast(message, isError = false) {
-            if (!toastMessageElement) return;
-            toastMessageElement.textContent = message;
-            toastMessageElement.className = `toast-message show ${isError ? 'bg-red-600' : 'neon-accent-bg'}`;
-            setTimeout(() => { toastMessageElement.classList.remove('show'); }, 3000);
-        }
+        function showToast(message, isError = false) { if (!toastMessageElement) return; toastMessageElement.textContent = message; toastMessageElement.className = `toast-message show ${isError ? 'bg-red-600' : 'neon-accent-bg'}`; setTimeout(() => { toastMessageElement.classList.remove('show'); }, 3000); }
 
-        const newUploadsContainer = document.getElementById('newUploadsContainer');
-        const newUploadsPlaceholder = document.getElementById('newUploadsPlaceholder');
-        const aionChartContainer = document.getElementById('aionChartContainer');
-        const aionChartPlaceholder = document.getElementById('aionChartPlaceholder');
-        const recommendedMusicContainer = document.getElementById('recommendedMusicContainer');
-        const recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
+        const newUploadsContainer = document.getElementById('newUploadsContainer'), newUploadsPlaceholder = document.getElementById('newUploadsPlaceholder');
+        const aionChartContainer = document.getElementById('aionChartContainer'), aionChartPlaceholder = document.getElementById('aionChartPlaceholder');
+        const recommendedMusicContainer = document.getElementById('recommendedMusicContainer'), recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
 
         function createContentItemHTML(itemData) {
-            let tagsHTML = '';
-            const allTags = [];
-            if (itemData.themes && Array.isArray(itemData.themes)) allTags.push(...itemData.themes);
-            if (itemData.genres && Array.isArray(itemData.genres)) allTags.push(...itemData.genres);
-            if (itemData.moods && Array.isArray(itemData.moods)) allTags.push(...itemData.moods);
-            if (itemData.tags) { 
-                 const manualTags = itemData.tags.split(',').map(t => t.trim()).filter(t => t);
-                 allTags.push(...manualTags);
-            }
+            const allDisplayTags = new Set();
+            if (itemData.title) allDisplayTags.add(itemData.title);
+            if (itemData.contentType) allDisplayTags.add(itemData.contentType);
+            if (itemData.aiMusicArtist) allDisplayTags.add(itemData.aiMusicArtist);
+            if (itemData.singerName) allDisplayTags.add(itemData.singerName);
+            if (itemData.aiTool) allDisplayTags.add(itemData.aiTool);
+            if (itemData.themes && Array.isArray(itemData.themes)) itemData.themes.forEach(t => allDisplayTags.add(t));
+            if (itemData.genres && Array.isArray(itemData.genres)) itemData.genres.forEach(g => allDisplayTags.add(g));
+            if (itemData.moods && Array.isArray(itemData.moods)) itemData.moods.forEach(m => allDisplayTags.add(m));
+            if (itemData.tags) { itemData.tags.split(',').map(t => t.trim()).filter(t => t).forEach(tag => allDisplayTags.add(tag));}
+            if (itemData.isInstrumental) allDisplayTags.add("Instrumental");
             
-            tagsHTML = [...new Set(allTags)].map(tag => `#${tag.trim()}`).join(' ');
-
-
-            if (itemData.isInstrumental) tagsHTML += ` <span class="text-cyan-400">#Instrumental</span>`;
+            let tagsHTML = Array.from(allDisplayTags).map(tag => `#${tag.trim()}`).join(' ');
             if (typeof itemData.views === 'number') tagsHTML += ` <span class="text-yellow-300 ml-2"><i class="fas fa-eye text-xs"></i> ${itemData.views}</span>`;
-
 
             let actionButtonsHTML = `<div class="item-action-icon-wrapper">`;
             if (userId && !userId.startsWith('guest-')) {
@@ -448,175 +264,120 @@
             if (isAdminMode) { 
                 actionButtonsHTML += `<i class="fas fa-edit item-action-icon edit-item-button" title="수정"></i>`;
                 actionButtonsHTML += `<i class="fas fa-trash-alt item-action-icon delete-item-button" title="삭제"></i>`;
-                const isRecommended = itemData.isRecommended === true;
-                actionButtonsHTML += `<i class="fas fa-star item-action-icon recommend-checkbox-icon ${isRecommended ? 'text-yellow-400' : 'text-gray-400'}" title="${isRecommended ? '추천 해제' : '추천 설정'}"></i>`;
+                actionButtonsHTML += `<i class="fas fa-star item-action-icon recommend-checkbox-icon ${itemData.isRecommended ? 'text-yellow-400' : 'text-gray-400'}" title="${itemData.isRecommended ? '추천 해제' : '추천 설정'}"></i>`;
             }
             actionButtonsHTML += `</div>`;
-
-            const imageClass = "h-full"; 
-            const artistDisplay = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
+            const artistDisplay = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A';
             let subscribeIconHTML = '';
             if (userId && !userId.startsWith('guest-') && artistDisplay !== 'N/A') {
                 const isSubscribed = userSubscribedArtists.has(artistDisplay);
                 subscribeIconHTML = `<i class="${isSubscribed ? 'fas fa-heart text-red-500' : 'far fa-heart'} subscribe-artist-icon" data-artist-name="${artistDisplay}" title="${isSubscribed ? artistDisplay + ' 구독 취소' : artistDisplay + ' 구독'}"></i>`;
             }
-
-            return `
-                ${actionButtonsHTML}
-                <div class="thumbnail-image-container mb-1">
-                    <img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image ${imageClass}" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';">
-                </div>
-                <h4 class="item-title truncate">${itemData.title}</h4>
-                <div class="item-artist-wrapper">
-                    <p class="item-artist text-gray-400 truncate">${artistDisplay}</p>
-                    ${subscribeIconHTML}
-                </div>
-                <span class="item-tags neon-accent">${tagsHTML}</span>`;
+            return `${actionButtonsHTML}<div class="thumbnail-image-container mb-1"><img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image h-full" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';"></div><h4 class="item-title truncate">${itemData.title}</h4><div class="item-artist-wrapper"><p class="item-artist text-gray-400 truncate">${artistDisplay}</p>${subscribeIconHTML}</div><span class="item-tags neon-accent">${tagsHTML}</span>`;
         }
 
         function renderContentItem(itemData, container) { 
-            if (!container) return;
-            const newItemDiv = document.createElement('div');
-            let itemClasses = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer flex flex-col'; 
-            newItemDiv.className = itemClasses;
-            newItemDiv.dataset.youtubeId = itemData.youtubeId;
-            newItemDiv.dataset.itemId = itemData.itemId;
+            if (!container) return; const newItemDiv = document.createElement('div');
+            newItemDiv.className = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer flex flex-col'; 
+            newItemDiv.dataset.youtubeId = itemData.youtubeId; newItemDiv.dataset.itemId = itemData.itemId;
             newItemDiv.innerHTML = createContentItemHTML(itemData);
-            if (container === newUploadsContainer) container.insertBefore(newItemDiv, container.firstChild);
-            else container.appendChild(newItemDiv);
+            if (container === newUploadsContainer) container.insertBefore(newItemDiv, container.firstChild); else container.appendChild(newItemDiv);
         }
         function clearContainer(container, placeholder) { if (!container) return; Array.from(container.children).filter(c => c !== placeholder).forEach(c => container.removeChild(c)); }
         function renderPageContent() { renderNewUploadsSection(); renderAionChart(); renderRecommendedMusicSection(); }
-        function renderNewUploadsSection() { 
-            if (!newUploadsContainer) return; clearContainer(newUploadsContainer, newUploadsPlaceholder);
-            if (allContentData.length > 0) { if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); }
-            else { if(newUploadsPlaceholder) { newUploadsPlaceholder.classList.remove('hidden'); newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; } }
-        }
-        function renderRecommendedMusicSection() { 
-            if (!recommendedMusicContainer) return; clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder);
-            const items = allContentData.filter(item => item.isRecommended === true);
-            if (items.length > 0) { if(recommendedMusicPlaceholder) recommendedMusicPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, recommendedMusicContainer)); }
-            else { if(recommendedMusicPlaceholder) { recommendedMusicPlaceholder.classList.remove('hidden'); recommendedMusicPlaceholder.textContent = "추천 음악이 없습니다."; } }
-        }
-        function renderAionChart() { 
-            if (!aionChartContainer) return; clearContainer(aionChartContainer, aionChartPlaceholder);
-            const items = [...allContentData].filter(i => (i.views || 0) > 0).sort((a,b) => (b.views||0) - (a.views||0)).slice(0,10);
-            if (items.length > 0) { if(aionChartPlaceholder) aionChartPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, aionChartContainer)); }
-            else { if(aionChartPlaceholder) { aionChartPlaceholder.classList.remove('hidden'); aionChartPlaceholder.textContent = "차트 데이터가 없습니다."; } }
-        }
+        function renderNewUploadsSection() { if (!newUploadsContainer) return; clearContainer(newUploadsContainer, newUploadsPlaceholder); if (allContentData.length > 0) { if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); } else { if(newUploadsPlaceholder) { newUploadsPlaceholder.classList.remove('hidden'); newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; } } }
+        function renderRecommendedMusicSection() { if (!recommendedMusicContainer) return; clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder); const items = allContentData.filter(item => item.isRecommended); if (items.length > 0) { if(recommendedMusicPlaceholder) recommendedMusicPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, recommendedMusicContainer)); } else { if(recommendedMusicPlaceholder) { recommendedMusicPlaceholder.classList.remove('hidden'); recommendedMusicPlaceholder.textContent = "추천 음악이 없습니다."; } } }
+        function renderAionChart() { if (!aionChartContainer) return; clearContainer(aionChartContainer, aionChartPlaceholder); const items = [...allContentData].filter(i => (i.views || 0) > 0).sort((a,b) => (b.views||0) - (a.views||0)).slice(0,10); if (items.length > 0) { if(aionChartPlaceholder) aionChartPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, aionChartContainer)); } else { if(aionChartPlaceholder) { aionChartPlaceholder.classList.remove('hidden'); aionChartPlaceholder.textContent = "차트 데이터가 없습니다."; } } }
         
         const editItemModal = document.getElementById('editItemModal');
         let currentEditingItemId = null;
+
+        function getFormValues(formPrefix) {
+            const title = document.getElementById(`${formPrefix}Title`)?.value.trim();
+            const youtubeLink = document.getElementById(`${formPrefix}YoutubeLink`)?.value.trim();
+            const contentType = document.getElementById(`${formPrefix}ContentType`)?.value;
+            const themes = Array.from(document.querySelectorAll(`#${formPrefix}ThemesContainer input:checked`)).map(cb => cb.value);
+            const genres = Array.from(document.querySelectorAll(`#${formPrefix}GenresContainer input:checked`)).map(cb => cb.value);
+            const moods = Array.from(document.querySelectorAll(`#${formPrefix}MoodsContainer input:checked`)).map(cb => cb.value);
+            const isInstrumental = document.getElementById(`${formPrefix}IsInstrumental`)?.checked || false;
+            const aiMusicArtist = document.getElementById(`${formPrefix}AiMusicArtist`)?.value.trim();
+            const singerName = document.getElementById(`${formPrefix}SingerName`)?.value.trim();
+            const aiTool = document.getElementById(`${formPrefix}AiTool`)?.value.trim();
+            
+            const autoGeneratedTagsSet = new Set();
+            if (title) autoGeneratedTagsSet.add(title);
+            if (contentType) autoGeneratedTagsSet.add(contentType);
+            if (document.getElementById(`${formPrefix}AiMusicArtistContainer`) && !document.getElementById(`${formPrefix}AiMusicArtistContainer`).classList.contains('hidden') && aiMusicArtist) autoGeneratedTagsSet.add(aiMusicArtist);
+            if (document.getElementById(`${formPrefix}SingerNameContainer`) && !document.getElementById(`${formPrefix}SingerNameContainer`).classList.contains('hidden') && singerName) autoGeneratedTagsSet.add(singerName);
+            if (document.getElementById(`${formPrefix}AiToolContainer`) && !document.getElementById(`${formPrefix}AiToolContainer`).classList.contains('hidden') && aiTool) autoGeneratedTagsSet.add(aiTool);
+            if (isInstrumental) autoGeneratedTagsSet.add("Instrumental");
+            themes.forEach(t => autoGeneratedTagsSet.add(t));
+            genres.forEach(g => autoGeneratedTagsSet.add(g));
+            moods.forEach(m => autoGeneratedTagsSet.add(m));
+
+            const allTagsFromInputString = document.getElementById(`${formPrefix}Tags`)?.value.trim() || "";
+            const allTagsFromInputArray = allTagsFromInputString ? allTagsFromInputString.split(',').map(t => t.trim()).filter(t => t) : [];
+            const trulyManualTagsToSave = allTagsFromInputArray.filter(tag => !autoGeneratedTagsSet.has(tag));
+
+            return {
+                title, youtubeLink, contentType, themes, genres, moods, 
+                tags: trulyManualTagsToSave.join(','), 
+                isInstrumental, aiMusicArtist, singerName, aiTool,
+                youtubeId: getYouTubeId(youtubeLink)
+            };
+        }
 
 
         async function handleUploadFormSubmit(event) {
             event.preventDefault();
             if (!isAdminMode) { showToast("관리자만 업로드할 수 있습니다.", true); return; }
-
-            const title = document.getElementById('uploadTitle').value.trim();
-            const youtubeLink = document.getElementById('uploadYoutubeLink').value.trim();
-            const contentType = document.getElementById('uploadContentType').value;
-            
-            const selectedThemes = Array.from(document.querySelectorAll('#uploadThemesContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            const selectedGenres = Array.from(document.querySelectorAll('#uploadGenresContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            const selectedMoods = Array.from(document.querySelectorAll('#uploadMoodsContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            
-            const manualTags = document.getElementById('uploadTags').value.trim()
-                                .split(',')
-                                .map(tag => tag.trim())
-                                .filter(tag => tag && !selectedThemes.includes(tag) && !selectedGenres.includes(tag) && !selectedMoods.includes(tag));
-
-            const isInstrumental = document.getElementById('uploadIsInstrumental').checked;
-            const aiMusicArtist = document.getElementById('uploadAiMusicArtist')?.value.trim();
-            const singerName = document.getElementById('uploadSingerName')?.value.trim(); 
-            const aiTool = document.getElementById('uploadAiTool')?.value.trim();
-
-            if (!title || !youtubeLink || !contentType) {
-                showToast("필수 항목(제목, YouTube 링크, 콘텐츠 유형)을 입력해주세요.", true); return;
-            }
-            const youtubeId = getYouTubeId(youtubeLink);
-            if (!youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
+            const formValues = getFormValues('upload');
+            if (!formValues.title || !formValues.youtubeLink || !formValues.contentType) { showToast("필수 항목(제목, YouTube 링크, 콘텐츠 유형)을 입력해주세요.", true); return; }
+            if (!formValues.youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
 
             const newItemData = {
-                title, youtubeId, contentType, 
-                themes: selectedThemes, 
-                genres: selectedGenres, 
-                moods: selectedMoods,   
-                tags: manualTags.join(','), 
-                isInstrumental,
-                aiMusicArtist: (contentType === 'ai-music' && aiMusicArtist) ? aiMusicArtist : null,
-                singerName: (contentType === 'ai-music' || contentType === 'general-music') && singerName ? singerName : null,
-                aiTool: (contentType === 'ai-mv' && aiTool) ? aiTool : null,
+                title: formValues.title, youtubeId: formValues.youtubeId, contentType: formValues.contentType, 
+                themes: formValues.themes, genres: formValues.genres, moods: formValues.moods,   
+                tags: formValues.tags, isInstrumental: formValues.isInstrumental,
+                aiMusicArtist: (formValues.contentType === 'ai-music' && formValues.aiMusicArtist) ? formValues.aiMusicArtist : null,
+                singerName: (formValues.contentType === 'ai-music' || formValues.contentType === 'general-music') && formValues.singerName ? formValues.singerName : null,
+                aiTool: (formValues.contentType === 'ai-mv' && formValues.aiTool) ? formValues.aiTool : null,
                 views: 0, isRecommended: false, createdAt: serverTimestamp(), uploaderId: userId
             };
-
             try {
                 await addDoc(collection(db, getContentItemsCollectionPath()), newItemData);
                 showToast("콘텐츠가 성공적으로 업로드되었습니다!");
                 document.getElementById('uploadForm').reset();
                 updateThumbnailPreview('', 'thumbnailPreview'); 
-                updateUploadTagsFromSelections(); 
-                toggleUploadFields(); // Reset field visibility
+                updateUploadTagsFromSelections(); toggleUploadFields(); 
                 switchSection('home'); 
-            } catch (error) {
-                console.error("Error uploading content (Admin):", error);
-                showToast("업로드 중 오류 발생: " + error.message, true);
-            }
+            } catch (error) { console.error("Error uploading (Admin):", error); showToast("업로드 오류: " + error.message, true); }
         }
         
         async function handleEditFormSubmit(event) {
             event.preventDefault();
-            if (!isAdminMode || !currentEditingItemId) { showToast("수정 권한이 없거나 대상이 없습니다.", true); return; }
-
-            const title = document.getElementById('editTitle').value.trim();
-            const youtubeLink = document.getElementById('editYoutubeLink').value.trim();
-            const contentType = document.getElementById('editContentType').value;
-
-            const selectedThemes = Array.from(document.querySelectorAll('#editThemesContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            const selectedGenres = Array.from(document.querySelectorAll('#editGenresContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            const selectedMoods = Array.from(document.querySelectorAll('#editMoodsContainer input[type="checkbox"]:checked')).map(cb => cb.value);
-            
-            const manualTags = document.getElementById('editTags').value.trim()
-                                .split(',')
-                                .map(tag => tag.trim())
-                                .filter(tag => tag && !selectedThemes.includes(tag) && !selectedGenres.includes(tag) && !selectedMoods.includes(tag));
-            
-            const isInstrumental = document.getElementById('editIsInstrumental').checked;
-            const aiMusicArtist = document.getElementById('editAiMusicArtist')?.value.trim();
-            const singerName = document.getElementById('editSingerName')?.value.trim(); 
-            const aiTool = document.getElementById('editAiTool')?.value.trim();
-            
-            if (!title || !youtubeLink || !contentType) { showToast("제목, YouTube 링크, 콘텐츠 유형은 필수입니다.", true); return; }
-            const youtubeId = getYouTubeId(youtubeLink);
-            if (!youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
+            if (!isAdminMode || !currentEditingItemId) { showToast("수정 권한/대상이 없습니다.", true); return; }
+            const formValues = getFormValues('edit');
+            if (!formValues.title || !formValues.youtubeLink || !formValues.contentType) { showToast("제목, YouTube 링크, 콘텐츠 유형은 필수입니다.", true); return; }
+            if (!formValues.youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
 
             const itemToEdit = allContentData.find(item => item.itemId === currentEditingItemId);
             if (!itemToEdit) { showToast("수정할 항목을 찾을 수 없습니다.", true); return; }
 
             const updatedItemData = {
-                title, youtubeId, contentType,
-                themes: selectedThemes,
-                genres: selectedGenres,
-                moods: selectedMoods,
-                tags: manualTags.join(','),
-                isInstrumental,
-                aiMusicArtist: (contentType === 'ai-music' && aiMusicArtist) ? aiMusicArtist : null,
-                singerName: (contentType === 'ai-music' || contentType === 'general-music') && singerName ? singerName : null,
-                aiTool: (contentType === 'ai-mv' && aiTool) ? aiTool : null,
+                title: formValues.title, youtubeId: formValues.youtubeId, contentType: formValues.contentType,
+                themes: formValues.themes, genres: formValues.genres, moods: formValues.moods,
+                tags: formValues.tags, isInstrumental: formValues.isInstrumental,
+                aiMusicArtist: (formValues.contentType === 'ai-music' && formValues.aiMusicArtist) ? formValues.aiMusicArtist : null,
+                singerName: (formValues.contentType === 'ai-music' || formValues.contentType === 'general-music') && formValues.singerName ? formValues.singerName : null,
+                aiTool: (formValues.contentType === 'ai-mv' && formValues.aiTool) ? formValues.aiTool : null,
                 isRecommended: itemToEdit.isRecommended || false 
             };
-
             try {
-                const itemRef = doc(db, getContentItemsCollectionPath(), currentEditingItemId);
-                await updateDoc(itemRef, updatedItemData);
-                showToast("콘텐츠가 성공적으로 수정되었습니다!");
-                closeEditModal();
-            } catch (error) {
-                console.error("Error updating content (Admin):", error);
-                showToast("수정 중 오류 발생: " + error.message, true);
-            }
+                await updateDoc(doc(db, getContentItemsCollectionPath(), currentEditingItemId), updatedItemData);
+                showToast("콘텐츠가 성공적으로 수정되었습니다!"); closeEditModal();
+            } catch (error) { console.error("Error updating (Admin):", error); showToast("수정 오류: " + error.message, true); }
         }
-
 
         const youtubeModal = document.getElementById('youtubeModal');
         const youtubePlayer = document.getElementById('youtubePlayer');
@@ -624,258 +385,172 @@
 
         async function handleContentInteraction(event) {
             if (!appInitialized) return;
-            const targetPlayableItem = event.target.closest('.youtube-playable');
-            const targetAddToPlaylistButton = event.target.closest('.add-to-playlist-icon');
-            const targetSubscribeButton = event.target.closest('.subscribe-artist-icon');
-            const targetLikeButton = event.target.closest('.like-item-button');
-            const targetEditButton = event.target.closest('.edit-item-button');
-            const targetDeleteButton = event.target.closest('.delete-item-button');
-            const targetRecommendButton = event.target.closest('.recommend-checkbox-icon');
-
-            if (targetPlayableItem && !targetAddToPlaylistButton && !targetSubscribeButton && !targetLikeButton && !targetEditButton && !targetDeleteButton && !targetRecommendButton) { 
-                const youtubeId = targetPlayableItem.dataset.youtubeId;
-                const itemId = targetPlayableItem.dataset.itemId;
-                if (youtubeId && itemId) openYoutubeModal(youtubeId, itemId);
+            const target = event.target;
+            const playableItem = target.closest('.youtube-playable');
+            const actionMappings = {
+                '.add-to-playlist-icon': () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } currentItemToAddToPlaylist = playableItem?.dataset.itemId; if (currentItemToAddToPlaylist) openAddToPlaylistModal(); },
+                '.subscribe-artist-icon': async () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } const artistName = target.dataset.artistName; if (artistName && artistName !== 'N/A') await toggleArtistSubscription(artistName); },
+                '.like-item-button': async () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } const itemId = playableItem?.dataset.itemId; if(itemId) await toggleLikeItem(itemId); },
+                '.edit-item-button': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) openEditModalWithData(itemId); } },
+                '.delete-item-button': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) deleteContentItem(itemId); } },
+                '.recommend-checkbox-icon': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) toggleRecommendation(itemId); } }
+            };
+            for (const selector in actionMappings) {
+                if (target.closest(selector)) { event.stopPropagation(); actionMappings[selector](); return; }
             }
-            if (userId && !userId.startsWith('guest-') && targetAddToPlaylistButton) { event.stopPropagation(); currentItemToAddToPlaylist = targetAddToPlaylistButton.closest('.youtube-playable')?.dataset.itemId; if (currentItemToAddToPlaylist) openAddToPlaylistModal(); }
-            if (userId && !userId.startsWith('guest-') && targetSubscribeButton) { event.stopPropagation(); const artistName = targetSubscribeButton.dataset.artistName; if (artistName && artistName !== 'N/A') await toggleArtistSubscription(artistName); }
-            if (userId && !userId.startsWith('guest-') && targetLikeButton) { event.stopPropagation(); const itemIdToLike = targetLikeButton.closest('.youtube-playable')?.dataset.itemId; if(itemIdToLike) await toggleLikeItem(itemIdToLike); }
-
-            if (isAdminMode && targetEditButton) {
-                event.stopPropagation();
-                const itemIdToEdit = targetEditButton.closest('.youtube-playable')?.dataset.itemId;
-                if (itemIdToEdit) openEditModalWithData(itemIdToEdit);
-            }
-            if (isAdminMode && targetDeleteButton) {
-                event.stopPropagation();
-                const itemIdToDelete = targetDeleteButton.closest('.youtube-playable')?.dataset.itemId;
-                if (itemIdToDelete) deleteContentItem(itemIdToDelete);
-            }
-            if (isAdminMode && targetRecommendButton) {
-                event.stopPropagation();
-                const itemIdToRecommend = targetRecommendButton.closest('.youtube-playable')?.dataset.itemId;
-                if (itemIdToRecommend) toggleRecommendation(itemIdToRecommend);
-            }
+            if (playableItem) { const { youtubeId, itemId } = playableItem.dataset; if (youtubeId && itemId) openYoutubeModal(youtubeId, itemId); }
         }
 
-        function openYoutubeModal(youtubeId, itemId) {
-            if (youtubePlayer && youtubeModal) {
-                youtubePlayer.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`; 
-                youtubeModal.classList.remove('hidden'); youtubeModal.classList.add('flex');
-                incrementViewCount(itemId);
-            }
-        }
+        function openYoutubeModal(youtubeId, itemId) { if (youtubePlayer && youtubeModal) { youtubePlayer.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`; youtubeModal.classList.remove('hidden'); youtubeModal.classList.add('flex'); incrementViewCount(itemId); } }
         function closeYoutubeModal() { if (youtubePlayer && youtubeModal) { youtubePlayer.src = ''; youtubeModal.classList.add('hidden'); youtubeModal.classList.remove('flex'); } }
-        async function incrementViewCount(itemId) { if (!itemId || !userId) return; try { const itemRef = doc(db, getContentItemsCollectionPath(), itemId); await updateDoc(itemRef, { views: increment(1) }); console.log(`View count incremented for ${itemId}`); } catch (error) { console.error('Error incrementing view count:', error); } }
+        async function incrementViewCount(itemId) { if (!itemId) return; try { await updateDoc(doc(db, getContentItemsCollectionPath(), itemId), { views: increment(1) }); } catch (e) { console.error('Err incrementing views:', e); } }
 
         function openEditModalWithData(itemId) {
             if (!isAdminMode || !editItemModal) return;
             const item = allContentData.find(i => i.itemId === itemId);
             if (!item) { showToast("수정할 항목을 찾을 수 없습니다.", true); return; }
-
             currentEditingItemId = itemId;
             document.getElementById('editTitle').value = item.title || '';
             document.getElementById('editYoutubeLink').value = item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '';
             updateThumbnailPreview(item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '', 'editThumbnailPreview');
-            
             document.getElementById('editContentType').value = item.contentType || '';
             toggleEditFields(); 
-
             populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme', item.themes || []);
             populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre', item.genres || []);
             populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood', item.moods || []);
-            
             document.getElementById('editTags').value = item.tags || ''; 
             updateEditTagsFromSelections(); 
-
             document.getElementById('editIsInstrumental').checked = item.isInstrumental || false;
-            
             if(document.getElementById('editAiMusicArtist')) document.getElementById('editAiMusicArtist').value = item.aiMusicArtist || '';
             if(document.getElementById('editSingerName')) document.getElementById('editSingerName').value = item.singerName || '';
             if(document.getElementById('editAiTool')) document.getElementById('editAiTool').value = item.aiTool || '';
-            
             editItemModal.classList.remove('hidden');
         }
         function closeEditModal() { if (editItemModal) { editItemModal.classList.add('hidden'); currentEditingItemId = null; } }
         
         async function deleteContentItem(itemIdToDelete) {
             if (!isAdminMode || !itemIdToDelete) return;
-            const confirmDelete = await showConfirmationModal("정말로 이 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.");
-            if (confirmDelete) {
-                try {
-                    await deleteDoc(doc(db, getContentItemsCollectionPath(), itemIdToDelete));
-                    showToast("콘텐츠가 삭제되었습니다.");
-                } catch (error) {
-                    console.error("Error deleting content (Admin):", error);
-                    showToast("삭제 중 오류 발생: " + error.message, true);
-                }
+            if (await showConfirmationModal("콘텐츠 삭제하시겠습니까?")) {
+                try { await deleteDoc(doc(db, getContentItemsCollectionPath(), itemIdToDelete)); showToast("콘텐츠 삭제됨."); } 
+                catch (e) { console.error("Error deleting (Admin):", e); showToast("삭제 오류: " + e.message, true); }
             }
         }
-
         async function toggleRecommendation(itemId) {
-            if (!isAdminMode || !itemId) return;
-            const item = allContentData.find(i => i.itemId === itemId);
-            if (!item) return;
-            try {
-                const itemRef = doc(db, getContentItemsCollectionPath(), itemId);
-                await updateDoc(itemRef, { isRecommended: !item.isRecommended });
-                showToast(item.isRecommended ? "추천 해제됨" : "추천 설정됨");
-            } catch (error) {
-                console.error("Error toggling recommendation (Admin):", error);
-                showToast("추천 상태 변경 중 오류 발생", true);
-            }
+            if (!isAdminMode || !itemId) return; const item = allContentData.find(i => i.itemId === itemId); if (!item) return;
+            try { await updateDoc(doc(db, getContentItemsCollectionPath(), itemId), { isRecommended: !item.isRecommended }); showToast(item.isRecommended ? "추천 해제" : "추천 설정"); } 
+            catch (e) { console.error("Error recommending (Admin):", e); showToast("추천 변경 오류", true); }
         }
 
         function toggleUploadFields() {
             const contentType = document.getElementById('uploadContentType').value;
-            const aiMusicArtistContainer = document.getElementById('uploadAiMusicArtistContainer');
-            const singerNameContainer = document.getElementById('uploadSingerNameContainer');
-            const aiToolContainer = document.getElementById('uploadAiToolContainer');
-
-            if(aiMusicArtistContainer) aiMusicArtistContainer.classList.add('hidden');
-            if(singerNameContainer) singerNameContainer.classList.add('hidden');
-            if(aiToolContainer) aiToolContainer.classList.add('hidden');
-
-            if (contentType === 'ai-music') {
-                if(aiMusicArtistContainer) aiMusicArtistContainer.classList.remove('hidden');
-                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
-            } else if (contentType === 'general-music') {
-                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
-            } else if (contentType === 'ai-mv') {
-                if(aiToolContainer) aiToolContainer.classList.remove('hidden');
-            }
+            const artistContainer = document.getElementById('uploadAiMusicArtistContainer');
+            const singerContainer = document.getElementById('uploadSingerNameContainer');
+            const toolContainer = document.getElementById('uploadAiToolContainer');
+            [artistContainer, singerContainer, toolContainer].forEach(c => c?.classList.add('hidden'));
+            if (contentType === 'ai-music') { artistContainer?.classList.remove('hidden'); singerContainer?.classList.remove('hidden'); } 
+            else if (contentType === 'general-music') { singerContainer?.classList.remove('hidden'); } 
+            else if (contentType === 'ai-mv') { toolContainer?.classList.remove('hidden'); }
         }
 
         function toggleEditFields() {
             const contentType = document.getElementById('editContentType').value;
-            const aiMusicArtistContainer = document.getElementById('editAiMusicArtistContainer');
-            const singerNameContainer = document.getElementById('editSingerNameContainer');
-            const aiToolContainer = document.getElementById('editAiToolContainer');
-
-            if(aiMusicArtistContainer) aiMusicArtistContainer.classList.add('hidden');
-            if(singerNameContainer) singerNameContainer.classList.add('hidden');
-            if(aiToolContainer) aiToolContainer.classList.add('hidden');
-
-            if (contentType === 'ai-music') {
-                if(aiMusicArtistContainer) aiMusicArtistContainer.classList.remove('hidden');
-                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
-            } else if (contentType === 'general-music') {
-                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
-            } else if (contentType === 'ai-mv') {
-                if(aiToolContainer) aiToolContainer.classList.remove('hidden');
-            }
+            const artistContainer = document.getElementById('editAiMusicArtistContainer');
+            const singerContainer = document.getElementById('editSingerNameContainer');
+            const toolContainer = document.getElementById('editAiToolContainer');
+            [artistContainer, singerContainer, toolContainer].forEach(c => c?.classList.add('hidden'));
+            if (contentType === 'ai-music') { artistContainer?.classList.remove('hidden'); singerContainer?.classList.remove('hidden'); } 
+            else if (contentType === 'general-music') { singerContainer?.classList.remove('hidden'); } 
+            else if (contentType === 'ai-mv') { toolContainer?.classList.remove('hidden'); }
         }
         
-        const myPlaylistsContainer = document.getElementById('myPlaylistsContainer');
-        const myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
-        const createPlaylistModal = document.getElementById('createPlaylistModal');
-        const newPlaylistNameInput = document.getElementById('newPlaylistName');
-        const addToPlaylistModal = document.getElementById('addToPlaylistModal');
-        const playlistSelectionContainer = document.getElementById('playlistSelectionContainer');
-        const playlistSelectionPlaceholder = document.getElementById('playlistSelectionPlaceholder');
-        const newPlaylistNameInAddModalInput = document.getElementById('newPlaylistNameInAddModal');
-        const playlistDetailModal = document.getElementById('playlistDetailModal');
-        const playlistDetailNameElement = document.getElementById('playlistDetailName');
-        const playlistDetailItemsContainer = document.getElementById('playlistDetailItemsContainer');
-        const playlistDetailPlaceholder = document.getElementById('playlistDetailPlaceholder');
+        const myPlaylistsContainer = document.getElementById('myPlaylistsContainer'), myPlaylistsPlaceholder = document.getElementById('myPlaylistsPlaceholder');
+        const createPlaylistModal = document.getElementById('createPlaylistModal'), newPlaylistNameInput = document.getElementById('newPlaylistName');
+        const addToPlaylistModal = document.getElementById('addToPlaylistModal'), playlistSelectionContainer = document.getElementById('playlistSelectionContainer');
+        const playlistSelectionPlaceholder = document.getElementById('playlistSelectionPlaceholder'), newPlaylistNameInAddModalInput = document.getElementById('newPlaylistNameInAddModal');
+        const playlistDetailModal = document.getElementById('playlistDetailModal'), playlistDetailNameElement = document.getElementById('playlistDetailName');
+        const playlistDetailItemsContainer = document.getElementById('playlistDetailItemsContainer'), playlistDetailPlaceholder = document.getElementById('playlistDetailPlaceholder');
         let currentViewingPlaylistId = null;
 
-        function openCreatePlaylistModal() { if (!userId || userId.startsWith('guest-')) { showToast("로그인이 필요합니다.", true); return; } if (createPlaylistModal) createPlaylistModal.classList.remove('hidden'); if (newPlaylistNameInput) newPlaylistNameInput.value = ''; }
+        function openCreatePlaylistModal() { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } if (createPlaylistModal) createPlaylistModal.classList.remove('hidden'); if (newPlaylistNameInput) newPlaylistNameInput.value = ''; }
         function closeCreatePlaylistModal() { if (createPlaylistModal) createPlaylistModal.classList.add('hidden'); }
-        async function handleConfirmCreatePlaylist() { if (!userId || userId.startsWith('guest-')) { showToast("로그인이 필요합니다.", true); return; } const playlistName = newPlaylistNameInput.value.trim(); if (playlistName) { try { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: playlistName, items: [], ownerId: userId, createdAt: serverTimestamp() }); closeCreatePlaylistModal(); showToast(`플레이리스트 '${playlistName}'가 생성되었습니다.`); } catch (error) { console.error("Error creating playlist:", error); showToast("플레이리스트 생성 오류.", true); } } else { showToast('플레이리스트 이름을 입력해주세요.', true); } }
-        function openAddToPlaylistModal() { if (!userId || userId.startsWith('guest-')) { showToast("로그인이 필요합니다.", true); return; } if (!addToPlaylistModal || !playlistSelectionContainer || !playlistSelectionPlaceholder) return; playlistSelectionContainer.innerHTML = ''; if (userPlaylists.length > 0) { if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const div = document.createElement('div'); div.className = 'flex items-center space-x-2 p-2 hover:bg-purple-700/30 rounded-md cursor-pointer'; div.dataset.playlistId = pl.id; const input = document.createElement('input'); input.type = 'radio'; input.name = 'playlistSelection'; input.value = pl.id; input.className = 'form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500'; input.id = `pl-select-${pl.id}`; const label = document.createElement('label'); label.htmlFor = `pl-select-${pl.id}`; label.textContent = pl.name; label.className = 'text-sm flex-grow cursor-pointer'; div.appendChild(input); div.appendChild(label); div.addEventListener('click', () => { input.checked = true; }); playlistSelectionContainer.appendChild(div); }); } else { if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.remove('hidden'); } if (newPlaylistNameInAddModalInput) newPlaylistNameInAddModalInput.value = ''; addToPlaylistModal.classList.remove('hidden'); }
+        async function handleConfirmCreatePlaylist() { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } const name = newPlaylistNameInput.value.trim(); if (name) { try { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name, items: [], ownerId: userId, createdAt: serverTimestamp() }); closeCreatePlaylistModal(); showToast(`'${name}' 생성됨.`); } catch (e) { console.error("Err creating playlist:", e); showToast("생성 오류.", true); } } else { showToast('이름 입력 필요.', true); } }
+        function openAddToPlaylistModal() { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } if (!addToPlaylistModal || !playlistSelectionContainer || !playlistSelectionPlaceholder) return; playlistSelectionContainer.innerHTML = ''; if (userPlaylists.length > 0) { if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const div = document.createElement('div'); div.className = 'flex items-center space-x-2 p-2 hover:bg-purple-700/30 rounded-md cursor-pointer'; div.dataset.playlistId = pl.id; const input = document.createElement('input'); input.type = 'radio'; input.name = 'playlistSelection'; input.value = pl.id; input.className = 'form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500'; input.id = `pl-select-${pl.id}`; const label = document.createElement('label'); label.htmlFor = `pl-select-${pl.id}`; label.textContent = pl.name; label.className = 'text-sm flex-grow cursor-pointer'; div.append(input, label); div.addEventListener('click', () => { input.checked = true; }); playlistSelectionContainer.appendChild(div); }); } else { if (playlistSelectionPlaceholder) playlistSelectionPlaceholder.classList.remove('hidden'); } if (newPlaylistNameInAddModalInput) newPlaylistNameInAddModalInput.value = ''; addToPlaylistModal.classList.remove('hidden'); }
         function closeAddToPlaylistModal() { if (addToPlaylistModal) addToPlaylistModal.classList.add('hidden'); currentItemToAddToPlaylist = null; }
-        async function handleConfirmAddToPlaylist() { if (!userId || userId.startsWith('guest-') || !currentItemToAddToPlaylist) { return; } const selectedRadio = playlistSelectionContainer.querySelector('input[name="playlistSelection"]:checked'); const newPlaylistName = newPlaylistNameInAddModalInput.value.trim(); let playlistNameForToast = ""; try { if (newPlaylistName) { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: newPlaylistName, items: [currentItemToAddToPlaylist], ownerId: userId, createdAt: serverTimestamp() }); playlistNameForToast = newPlaylistName; showToast(`'${playlistNameForToast}' 플레이리스트에 곡을 추가했습니다.`); } else if (selectedRadio) { const targetPlaylistId = selectedRadio.value; const playlist = userPlaylists.find(p => p.id === targetPlaylistId); if (playlist) { playlistNameForToast = playlist.name; if (!playlist.items.includes(currentItemToAddToPlaylist)) { const playlistRef = doc(db, getUserPlaylistsCollectionPath(userId), targetPlaylistId); await updateDoc(playlistRef, { items: [...playlist.items, currentItemToAddToPlaylist] }); showToast(`'${playlistNameForToast}' 플레이리스트에 곡을 추가했습니다.`); } else { showToast('이미 해당 플레이리스트에 있는 곡입니다.'); } } else { showToast('선택한 플레이리스트를 찾을 수 없습니다.', true); return; } } else { showToast('플레이리스트를 선택하거나 새 플레이리스트 이름을 입력해주세요.', true); return; } closeAddToPlaylistModal(); } catch (error) { console.error("Error adding to playlist:", error); showToast("플레이리스트 추가 오류.", true); } }
-        function renderMyPlaylists() { if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return; clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "플레이리스트를 보려면 로그인해주세요."; } return; } if (userPlaylists.length > 0) { if(myPlaylistsPlaceholder) myPlaylistsPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const card = document.createElement('div'); card.className = 'playlist-card glassmorphism cursor-pointer'; card.dataset.playlistId = pl.id; const cover = document.createElement('div'); cover.className = 'playlist-cover'; if (pl.items && pl.items.length > 0) { const firstItemId = pl.items[0]; const firstItemData = allContentData.find(item => item.itemId === firstItemId); if (firstItemData && firstItemData.youtubeId) { const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(firstItemData.youtubeId); img.alt = pl.name; img.className = 'w-full h-full object-cover rounded-md'; img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music text-3xl"></i>'; }; cover.appendChild(img); } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } const info = document.createElement('div'); info.className = 'flex-grow'; const name = document.createElement('h4'); name.className = 'font-semibold text-sm truncate'; name.textContent = pl.name; const count = document.createElement('p'); count.className = 'text-xs text-gray-400'; count.textContent = `${(pl.items || []).length}곡`; info.appendChild(name); info.appendChild(count); card.appendChild(cover); card.appendChild(info); card.addEventListener('click', () => openPlaylistDetailModal(pl.id)); myPlaylistsContainer.appendChild(card); }); } else { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "만든 플레이리스트가 없습니다."; } } }
-        function openPlaylistDetailModal(playlistId) { currentViewingPlaylistId = playlistId; const playlist = userPlaylists.find(p => p.id === playlistId); if (!playlist || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; playlistDetailNameElement.textContent = playlist.name; clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); if (playlist.items && playlist.items.length > 0) { if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); playlist.items.forEach(itemId => { const itemData = allContentData.find(item => item.itemId === itemId); if (itemData) { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionButtonsContainer = document.createElement('div'); actionButtonsContainer.className = 'flex items-center'; const removeButton = document.createElement('button'); removeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; removeButton.innerHTML = '<i class="fas fa-times"></i>'; removeButton.title = "플레이리스트에서 삭제"; removeButton.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, itemData.itemId); }); actionButtonsContainer.appendChild(removeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionButtonsContainer); playlistDetailItemsContainer.appendChild(itemDiv); } }); } else { if(playlistDetailPlaceholder) { playlistDetailPlaceholder.classList.remove('hidden'); playlistDetailPlaceholder.textContent = "이 플레이리스트에 곡이 없습니다."; } } playlistDetailModal.classList.remove('hidden'); }
+        async function handleConfirmAddToPlaylist() { if (!userId || userId.startsWith('guest-') || !currentItemToAddToPlaylist) return; const selRadio = playlistSelectionContainer.querySelector('input:checked'); const newName = newPlaylistNameInAddModalInput.value.trim(); let nameToast = ""; try { if (newName) { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: newName, items: [currentItemToAddToPlaylist], ownerId: userId, createdAt: serverTimestamp() }); nameToast = newName; showToast(`'${nameToast}'에 추가됨.`); } else if (selRadio) { const plId = selRadio.value; const pl = userPlaylists.find(p => p.id === plId); if (pl) { nameToast = pl.name; if (!pl.items.includes(currentItemToAddToPlaylist)) { await updateDoc(doc(db, getUserPlaylistsCollectionPath(userId), plId), { items: [...pl.items, currentItemToAddToPlaylist] }); showToast(`'${nameToast}'에 추가됨.`); } else { showToast('이미 있는 곡.'); } } else { showToast('플레이리스트 없음.', true); return; } } else { showToast('선택 또는 새 이름 입력.', true); return; } closeAddToPlaylistModal(); } catch (e) { console.error("Err adding to playlist:", e); showToast("추가 오류.", true); } }
+        function renderMyPlaylists() { if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return; clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "로그인 필요."; } return; } if (userPlaylists.length > 0) { if(myPlaylistsPlaceholder) myPlaylistsPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const card = document.createElement('div'); card.className = 'playlist-card glassmorphism cursor-pointer'; card.dataset.playlistId = pl.id; const cover = document.createElement('div'); cover.className = 'playlist-cover'; if (pl.items && pl.items.length > 0) { const item = allContentData.find(i => i.itemId === pl.items[0]); if (item && item.youtubeId) { const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = pl.name; img.className = 'w-full h-full object-cover rounded-md'; img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music text-3xl"></i>'; }; cover.appendChild(img); } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } const info = document.createElement('div'); info.className = 'flex-grow'; const name = document.createElement('h4'); name.className = 'font-semibold text-sm truncate'; name.textContent = pl.name; const count = document.createElement('p'); count.className = 'text-xs text-gray-400'; count.textContent = `${(pl.items || []).length}곡`; info.append(name, count); card.append(cover, info); card.addEventListener('click', () => openPlaylistDetailModal(pl.id)); myPlaylistsContainer.appendChild(card); }); } else { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "플레이리스트 없음."; } } }
+        function openPlaylistDetailModal(playlistId) { currentViewingPlaylistId = playlistId; const pl = userPlaylists.find(p => p.id === playlistId); if (!pl || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; playlistDetailNameElement.textContent = pl.name; clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); if (pl.items && pl.items.length > 0) { if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); pl.items.forEach(itemId => { const item = allContentData.find(i => i.itemId === itemId); if (item) { const div = document.createElement('div'); div.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = item.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const textInfo = document.createElement('div'); textInfo.className = 'flex-grow cursor-pointer'; textInfo.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = item.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = item.singerName || item.aiMusicArtist || item.aiTool || 'N/A'; textInfo.append(titleH5, artistP); const actions = document.createElement('div'); actions.className = 'flex items-center'; const removeBtn = document.createElement('button'); removeBtn.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; removeBtn.innerHTML = '<i class="fas fa-times"></i>'; removeBtn.title = "플레이리스트에서 삭제"; removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, item.itemId); }); actions.appendChild(removeBtn); div.append(img, textInfo, actions); playlistDetailItemsContainer.appendChild(div); } }); } else { if(playlistDetailPlaceholder) { playlistDetailPlaceholder.classList.remove('hidden'); playlistDetailPlaceholder.textContent = "곡 없음."; } } playlistDetailModal.classList.remove('hidden'); }
         function closePlaylistDetailModal() { if(playlistDetailModal) playlistDetailModal.classList.add('hidden'); currentViewingPlaylistId = null; }
-        async function handleDeletePlaylist() { if (!userId || userId.startsWith('guest-') || !currentViewingPlaylistId) return; const playlist = userPlaylists.find(p => p.id === currentViewingPlaylistId); if (playlist) { const confirmDelete = await showConfirmationModal(`'${playlist.name}' 플레이리스트를 정말 삭제하시겠습니까?`); if (confirmDelete) { try { const playlistRef = doc(db, getUserPlaylistsCollectionPath(userId), currentViewingPlaylistId); await deleteDoc(playlistRef); closePlaylistDetailModal(); showToast('플레이리스트가 삭제되었습니다.'); } catch (error) { console.error("Error deleting playlist:", error); showToast("플레이리스트 삭제 오류.", true); } } } else { showToast("삭제할 플레이리스트를 찾을 수 없습니다.", true); } }
-        function showConfirmationModal(message) { return new Promise((resolve) => { const existingModal = document.getElementById('customConfirmModal'); if (existingModal) existingModal.remove(); const modalHtml = ` <div id="customConfirmModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100]"> <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-sm mx-4"> <p class="text-white mb-4 text-sm">${message}</p> <div class="flex justify-end space-x-3"> <button id="customConfirmCancel" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium text-white">취소</button> <button id="customConfirmOk" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium text-white">삭제</button> </div> </div> </div> `; document.body.insertAdjacentHTML('beforeend', modalHtml); const confirmModal = document.getElementById('customConfirmModal'); const okButton = document.getElementById('customConfirmOk'); const cancelButton = document.getElementById('customConfirmCancel'); const removeModal = () => { if (confirmModal) confirmModal.remove(); }; okButton.onclick = () => { removeModal(); resolve(true); }; cancelButton.onclick = () => { removeModal(); resolve(false); }; }); }
-        async function removeSongFromPlaylist(playlistId, itemIdToRemove) { if (!userId || userId.startsWith('guest-')) return; const playlist = userPlaylists.find(pl => pl.id === playlistId); if (playlist) { const updatedItems = playlist.items.filter(id => id !== itemIdToRemove); try { const playlistRef = doc(db, getUserPlaylistsCollectionPath(userId), playlistId); await updateDoc(playlistRef, { items: updatedItems }); showToast('플레이리스트에서 곡이 삭제되었습니다.'); if (currentViewingPlaylistId === playlistId && playlistDetailModal && !playlistDetailModal.classList.contains('hidden')) { const refreshedPlaylist = { ...playlist, items: updatedItems }; const tempPlaylists = userPlaylists.map(p => p.id === playlistId ? refreshedPlaylist : p); const oldPlaylists = userPlaylists; userPlaylists = tempPlaylists; openPlaylistDetailModal(playlistId); userPlaylists = oldPlaylists; } } catch (error) { console.error("Error removing song from playlist:", error); showToast("곡 삭제 오류.", true); } } }
-        const likedSongsContainer = document.getElementById('likedSongsContainer');
-        const likedSongsPlaceholder = document.getElementById('likedSongsPlaceholder');
-        async function toggleLikeItem(itemId) { if (!userId || userId.startsWith('guest-') || !itemId) return; const likeRef = doc(db, getUserLikedItemsCollectionPath(userId), itemId); try { if (userLikedItemIds.has(itemId)) { await deleteDoc(likeRef); showToast('좋아요를 취소했습니다.'); } else { await setDoc(likeRef, { likedAt: serverTimestamp(), itemId: itemId }); showToast('좋아요 표시한 곡에 추가했습니다.'); } } catch (error) { console.error("Error toggling like:", error); showToast("좋아요 처리 중 오류.", true); } }
-        function renderLikedSongs() { if (!likedSongsContainer || !likedSongsPlaceholder) return; clearContainer(likedSongsContainer, likedSongsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "좋아요 표시한 곡을 보려면 로그인해주세요."; } return; } if (userLikedItemIds.size > 0) { if(likedSongsPlaceholder) likedSongsPlaceholder.classList.add('hidden'); const likedItemsDetails = Array.from(userLikedItemIds).map(likedId => allContentData.find(item => item.itemId === likedId)).filter(itemData => itemData); likedItemsDetails.forEach(itemData => { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionWrapper = document.createElement('div'); actionWrapper.className = 'flex items-center'; const unlikeButton = document.createElement('button'); unlikeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; unlikeButton.innerHTML = '<i class="fas fa-heart-broken"></i>'; unlikeButton.title = "좋아요 취소"; unlikeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleLikeItem(itemData.itemId); }); actionWrapper.appendChild(unlikeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionWrapper); likedSongsContainer.appendChild(itemDiv); }); } else { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "아직 좋아요 표시한 곡이 없습니다."; } } }
-        const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
-        const subscribedArtistsPlaceholder = document.getElementById('subscribedArtistsPlaceholder');
-        async function toggleArtistSubscription(artistName) { if (!userId || userId.startsWith('guest-') || !artistName || artistName === 'N/A') { showToast('유효한 아티스트 이름이 아니거나 로그인이 필요합니다.', true); return; } const subRef = doc(db, getUserSubscribedArtistsCollectionPath(userId), artistName); try { if (userSubscribedArtists.has(artistName)) { await deleteDoc(subRef); showToast(`${artistName} 구독을 취소했습니다.`); } else { await setDoc(subRef, { subscribedAt: serverTimestamp(), artistName: artistName }); showToast(`${artistName}을(를) 구독했습니다.`); } } catch (error) { console.error("Error toggling subscription:", error); showToast("구독 처리 중 오류.", true); } }
-        function renderSubscribedArtists() { if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return; clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "구독한 아티스트를 보려면 로그인해주세요."; } return; } if (userSubscribedArtists.size > 0) { if(subscribedArtistsPlaceholder) subscribedArtistsPlaceholder.classList.add('hidden'); userSubscribedArtists.forEach(artistName => { const div = document.createElement('div'); div.className = 'flex items-center justify-between p-2 glassmorphism rounded-md hover:bg-purple-700/20'; const nameSpan = document.createElement('span'); nameSpan.className = 'text-sm truncate'; nameSpan.textContent = artistName; const unsubscribeButton = document.createElement('button'); unsubscribeButton.className = 'text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-700/20 flex-shrink-0'; unsubscribeButton.textContent = '구독 취소'; unsubscribeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleArtistSubscription(artistName); }); div.appendChild(nameSpan); div.appendChild(unsubscribeButton); subscribedArtistsContainer.appendChild(div); }); } else { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "아직 구독한 아티스트가 없습니다."; } } }
+        async function handleDeletePlaylist() { if (!userId || userId.startsWith('guest-') || !currentViewingPlaylistId) return; const pl = userPlaylists.find(p => p.id === currentViewingPlaylistId); if (pl) { if (await showConfirmationModal(`'${pl.name}' 삭제?`)) { try { await deleteDoc(doc(db, getUserPlaylistsCollectionPath(userId), currentViewingPlaylistId)); closePlaylistDetailModal(); showToast('플레이리스트 삭제됨.'); } catch (e) { console.error("Err deleting playlist:", e); showToast("삭제 오류.", true); } } } else { showToast("플레이리스트 없음.", true); } }
+        function showConfirmationModal(message) { return new Promise((resolve) => { const m = document.getElementById('customConfirmModal'); if (m) m.remove(); const html = ` <div id="customConfirmModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100]"> <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-sm mx-4"> <p class="text-white mb-4 text-sm">${message}</p> <div class="flex justify-end space-x-3"> <button id="customConfirmCancel" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium text-white">취소</button> <button id="customConfirmOk" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium text-white">삭제</button> </div> </div> </div> `; document.body.insertAdjacentHTML('beforeend', html); const cM = document.getElementById('customConfirmModal'), okB = document.getElementById('customConfirmOk'), canB = document.getElementById('customConfirmCancel'); const rM = () => { if (cM) cM.remove(); }; okB.onclick = () => { rM(); resolve(true); }; canB.onclick = () => { rM(); resolve(false); }; }); }
+        async function removeSongFromPlaylist(playlistId, itemIdToRemove) { if (!userId || userId.startsWith('guest-')) return; const pl = userPlaylists.find(p => p.id === playlistId); if (pl) { const items = pl.items.filter(id => id !== itemIdToRemove); try { await updateDoc(doc(db, getUserPlaylistsCollectionPath(userId), playlistId), { items }); showToast('곡 삭제됨.'); if (currentViewingPlaylistId === playlistId && playlistDetailModal && !playlistDetailModal.classList.contains('hidden')) { openPlaylistDetailModal(playlistId); } } catch (e) { console.error("Err removing song:", e); showToast("곡 삭제 오류.", true); } } }
+        const likedSongsContainer = document.getElementById('likedSongsContainer'), likedSongsPlaceholder = document.getElementById('likedSongsPlaceholder');
+        async function toggleLikeItem(itemId) { if (!userId || userId.startsWith('guest-') || !itemId) return; const ref = doc(db, getUserLikedItemsCollectionPath(userId), itemId); try { if (userLikedItemIds.has(itemId)) { await deleteDoc(ref); showToast('좋아요 취소.'); } else { await setDoc(ref, { likedAt: serverTimestamp(), itemId }); showToast('좋아요 곡 추가.'); } } catch (e) { console.error("Err toggling like:", e); showToast("좋아요 오류.", true); } }
+        function renderLikedSongs() { if (!likedSongsContainer || !likedSongsPlaceholder) return; clearContainer(likedSongsContainer, likedSongsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "로그인 필요."; } return; } if (userLikedItemIds.size > 0) { if(likedSongsPlaceholder) likedSongsPlaceholder.classList.add('hidden'); Array.from(userLikedItemIds).map(id => allContentData.find(item => item.itemId === id)).filter(item => item).forEach(item => { const div = document.createElement('div'); div.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = item.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const textInfo = document.createElement('div'); textInfo.className = 'flex-grow cursor-pointer'; textInfo.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = item.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = item.singerName || item.aiMusicArtist || item.aiTool || 'N/A'; textInfo.append(titleH5, artistP); const actions = document.createElement('div'); actions.className = 'flex items-center'; const unlikeBtn = document.createElement('button'); unlikeBtn.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; unlikeBtn.innerHTML = '<i class="fas fa-heart-broken"></i>'; unlikeBtn.title = "좋아요 취소"; unlikeBtn.addEventListener('click', async (e) => { e.stopPropagation(); await toggleLikeItem(item.itemId); }); actions.appendChild(unlikeBtn); div.append(img, textInfo, actions); likedSongsContainer.appendChild(div); }); } else { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "좋아요 곡 없음."; } } }
+        const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer'), subscribedArtistsPlaceholder = document.getElementById('subscribedArtistsPlaceholder');
+        async function toggleArtistSubscription(artistName) { if (!userId || userId.startsWith('guest-') || !artistName || artistName === 'N/A') { showToast('로그인 또는 유효한 아티스트 이름 필요.', true); return; } const ref = doc(db, getUserSubscribedArtistsCollectionPath(userId), artistName); try { if (userSubscribedArtists.has(artistName)) { await deleteDoc(ref); showToast(`${artistName} 구독 취소.`); } else { await setDoc(ref, { subscribedAt: serverTimestamp(), artistName }); showToast(`${artistName} 구독함.`); } } catch (e) { console.error("Err toggling sub:", e); showToast("구독 오류.", true); } }
+        function renderSubscribedArtists() { if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return; clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "로그인 필요."; } return; } if (userSubscribedArtists.size > 0) { if(subscribedArtistsPlaceholder) subscribedArtistsPlaceholder.classList.add('hidden'); Array.from(userSubscribedArtists).sort().forEach(name => { const div = document.createElement('div'); div.className = 'flex items-center justify-between p-2 glassmorphism rounded-md hover:bg-purple-700/20'; const span = document.createElement('span'); span.className = 'text-sm truncate'; span.textContent = name; const btn = document.createElement('button'); btn.className = 'text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-700/20 flex-shrink-0'; btn.textContent = '구독 취소'; btn.addEventListener('click', async (e) => { e.stopPropagation(); await toggleArtistSubscription(name); }); div.append(span, btn); subscribedArtistsContainer.appendChild(div); }); } else { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "구독 아티스트 없음."; } } }
 
-        // --- Helper function to populate checkbox groups ---
         function populateCheckboxGroup(containerId, items, groupName, selectedItems = []) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            container.innerHTML = ''; 
+            const container = document.getElementById(containerId); if (!container) return; container.innerHTML = ''; 
             items.forEach(item => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center space-x-2 p-2 rounded-md hover:bg-purple-700/20 cursor-pointer form-checkbox-label';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.name = groupName;
-                checkbox.value = item;
+                const label = document.createElement('label'); label.className = 'flex items-center space-x-2 p-2 rounded-md hover:bg-purple-700/20 cursor-pointer form-checkbox-label';
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.name = groupName; checkbox.value = item;
                 checkbox.className = 'form-checkbox text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500';
-                if (selectedItems.includes(item)) {
-                    checkbox.checked = true;
-                }
-                
-                const span = document.createElement('span');
-                span.textContent = item;
-                span.className = 'text-sm';
-                
-                label.appendChild(checkbox);
-                label.appendChild(span);
-                container.appendChild(label);
+                if (selectedItems.includes(item)) checkbox.checked = true;
+                const span = document.createElement('span'); span.textContent = item; span.className = 'text-sm';
+                label.append(checkbox, span); container.appendChild(label);
             });
         }
-
-        function populateUploadFormOptions() {
-            populateCheckboxGroup('uploadThemesContainer', predefinedThemes, 'uploadTheme');
-            populateCheckboxGroup('uploadGenresContainer', predefinedGenres, 'uploadGenre');
-            populateCheckboxGroup('uploadMoodsContainer', predefinedMoods, 'uploadMood');
-            updateUploadTagsFromSelections(); 
-        }
-         function populateEditFormOptions() {
-            populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme');
-            populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre');
-            populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood');
-            updateEditTagsFromSelections();
-        }
+        function populateUploadFormOptions() { populateCheckboxGroup('uploadThemesContainer', predefinedThemes, 'uploadTheme'); populateCheckboxGroup('uploadGenresContainer', predefinedGenres, 'uploadGenre'); populateCheckboxGroup('uploadMoodsContainer', predefinedMoods, 'uploadMood'); updateUploadTagsFromSelections(); }
+        function populateEditFormOptions() { populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme'); populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre'); populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood'); updateEditTagsFromSelections(); }
         
-        function updateUploadTagsFromSelections() {
-            const themes = Array.from(document.querySelectorAll('#uploadThemesContainer input:checked')).map(cb => cb.value);
-            const genres = Array.from(document.querySelectorAll('#uploadGenresContainer input:checked')).map(cb => cb.value);
-            const moods = Array.from(document.querySelectorAll('#uploadMoodsContainer input:checked')).map(cb => cb.value);
+        function updateCombinedTags(formPrefix, isManualTagInput = false) {
+            const autoGeneratedTags = new Set();
+            const getEl = (id) => document.getElementById(`${formPrefix}${id}`);
             
-            const uploadTagsInput = document.getElementById('uploadTags');
-            if (!uploadTagsInput) return;
+            const title = getEl('Title')?.value.trim(); if (title) autoGeneratedTags.add(title);
+            const contentType = getEl('ContentType')?.value; if (contentType) autoGeneratedTags.add(contentType);
+            
+            const aiArtistEl = getEl('AiMusicArtist'); const aiArtistContainer = getEl('AiMusicArtistContainer');
+            if (aiArtistEl && aiArtistContainer && !aiArtistContainer.classList.contains('hidden')) { const val = aiArtistEl.value.trim(); if (val) autoGeneratedTags.add(val); }
+            
+            const singerEl = getEl('SingerName'); const singerContainer = getEl('SingerNameContainer');
+            if (singerEl && singerContainer && !singerContainer.classList.contains('hidden')) { const val = singerEl.value.trim(); if (val) autoGeneratedTags.add(val); }
 
-            const currentManualTags = uploadTagsInput.value.split(',')
-                .map(tag => tag.trim())
-                .filter(tag => tag && !themes.includes(tag) && !genres.includes(tag) && !moods.includes(tag));
+            const toolEl = getEl('AiTool'); const toolContainer = getEl('AiToolContainer');
+            if (toolEl && toolContainer && !toolContainer.classList.contains('hidden')) { const val = toolEl.value.trim(); if (val) autoGeneratedTags.add(val); }
 
-            const allSelectedTags = [...new Set([...themes, ...genres, ...moods])];
-            const combinedTags = [...new Set([...allSelectedTags, ...currentManualTags])];
-            uploadTagsInput.value = combinedTags.join(', ');
+            if (getEl('IsInstrumental')?.checked) autoGeneratedTags.add("Instrumental");
+
+            ['Themes', 'Genres', 'Moods'].forEach(type => {
+                Array.from(document.querySelectorAll(`#${formPrefix}${type}Container input:checked`)).forEach(cb => autoGeneratedTags.add(cb.value));
+            });
+
+            const tagsInput = getEl('Tags');
+            let trulyManualTags = [];
+            if (tagsInput) {
+                const currentTagsInInput = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
+                if (isManualTagInput) { // If user is typing in tags field, all existing are considered "manual" for now
+                    trulyManualTags = currentTagsInInput;
+                } else { // Otherwise, filter out what's already auto-generated
+                    trulyManualTags = currentTagsInInput.filter(tag => !autoGeneratedTags.has(tag));
+                }
+            }
+            
+            const finalDisplayTags = [...new Set([...Array.from(autoGeneratedTags), ...trulyManualTags])];
+            if (tagsInput) {
+                // Preserve cursor position if it's a manual input focus
+                const currentCursorPos = tagsInput.selectionStart;
+                const oldValue = tagsInput.value;
+                tagsInput.value = finalDisplayTags.join(', ');
+                if (isManualTagInput && document.activeElement === tagsInput && oldValue.length === tagsInput.value.length) { // Avoid jump if length changed drastically
+                     tagsInput.setSelectionRange(currentCursorPos, currentCursorPos);
+                }
+            }
         }
 
-        function updateEditTagsFromSelections() {
-            const themes = Array.from(document.querySelectorAll('#editThemesContainer input:checked')).map(cb => cb.value);
-            const genres = Array.from(document.querySelectorAll('#editGenresContainer input:checked')).map(cb => cb.value);
-            const moods = Array.from(document.querySelectorAll('#editMoodsContainer input:checked')).map(cb => cb.value);
-            
-            const editTagsInput = document.getElementById('editTags');
-            if (!editTagsInput) return;
-
-            const currentManualTags = editTagsInput.value.split(',')
-                .map(tag => tag.trim())
-                .filter(tag => tag && !themes.includes(tag) && !genres.includes(tag) && !moods.includes(tag));
-            
-            const allSelectedTags = [...new Set([...themes, ...genres, ...moods])];
-            const combinedTags = [...new Set([...allSelectedTags, ...currentManualTags])];
-            editTagsInput.value = combinedTags.join(', ');
-        }
-
+        function updateUploadTagsFromSelections(isManualTagInput = false) { updateCombinedTags('upload', isManualTagInput); }
+        function updateEditTagsFromSelections(isManualTagInput = false) { updateCombinedTags('edit', isManualTagInput); }
 
     </script>
 
@@ -1178,8 +853,8 @@
                     </div>
                     
                     <div>
-                        <label for="uploadTags" class="form-label">태그 (선택된 주제/장르/분위기 자동 포함, 추가 입력 가능)</label>
-                        <input type="text" id="uploadTags" name="uploadTags" class="form-input" placeholder="예: #KPOP, #여름 (자동완성 및 직접입력)">
+                        <label for="uploadTags" class="form-label">태그 (자동 완성 및 직접 입력)</label>
+                        <input type="text" id="uploadTags" name="uploadTags" class="form-input" placeholder="다른 필드 입력 시 자동 완성, 직접 추가 가능">
                     </div>
 
                     <div class="flex items-center">
@@ -1278,7 +953,7 @@
                     <div id="editMoodsContainer" class="checkbox-group-container scrollable-content"></div>
                 </div>
                 <div>
-                    <label for="editTags" class="form-label">태그 (선택된 주제/장르/분위기 자동 포함, 추가 입력 가능)</label>
+                    <label for="editTags" class="form-label">태그 (자동 완성 및 직접 입력)</label>
                     <input type="text" id="editTags" name="editTags" class="form-input">
                 </div>
                 <div class="flex items-center">
