@@ -70,7 +70,7 @@
         let unsubscribeLikedItems = null;
         let unsubscribeSubscribedArtists = null;
 
-        // --- Predefined options for upload form ---
+        // --- Predefined options for upload/edit form ---
         const predefinedThemes = ["사랑", "우정", "이별", "희망", "꿈", "여행", "청춘", "위로", "그리움", "자연", "일상", "파티"];
         const predefinedGenres = ["발라드", "댄스", "팝", "K-Pop", "힙합", "R&B/Soul", "록", "메탈", "일렉트로닉", "재즈", "클래식", "포크", "인디", "트로트", "OST", "뉴에이지", "CCM"];
         const predefinedMoods = ["신나는", "잔잔한", "몽환적인", "슬픈", "행복한", "로맨틱한", "긴장감있는", "평화로운", "활기찬", "감성적인", "웅장한", "경쾌한", "어두운"];
@@ -102,7 +102,8 @@
             }
 
             setupAdminUI(); 
-            populateUploadFormOptions(); // Populate new select fields
+            populateUploadFormOptions(); 
+            populateEditFormOptions(); 
 
             if (!appInitialized) {
                 appInitialized = true;
@@ -323,14 +324,10 @@
             const uploadContentTypeSelect = document.getElementById('uploadContentType');
             if (uploadContentTypeSelect) { uploadContentTypeSelect.addEventListener('change', toggleUploadFields); toggleUploadFields(); }
 
-            // Event listeners for new checkbox groups to update tags
             document.getElementById('uploadThemesContainer')?.addEventListener('change', updateUploadTagsFromSelections);
             document.getElementById('uploadGenresContainer')?.addEventListener('change', updateUploadTagsFromSelections);
             document.getElementById('uploadMoodsContainer')?.addEventListener('change', updateUploadTagsFromSelections);
-            document.getElementById('uploadTags')?.addEventListener('input', () => {
-                // This ensures that if the user manually types, the automatic update doesn't immediately overwrite it
-                // A more sophisticated approach might be needed if complex interaction is desired
-            });
+            document.getElementById('uploadTags')?.addEventListener('input', () => { /* Allow manual input */ });
 
 
             const editItemForm = document.getElementById('editItemForm');
@@ -339,6 +336,14 @@
             if(editYoutubeLinkInput) editYoutubeLinkInput.addEventListener('input', updateEditThumbnailPreviewFromUrlInput);
             const cancelEditItemButtonInModal = document.getElementById('cancelEditItemButtonInModal'); 
             if(cancelEditItemButtonInModal) cancelEditItemButtonInModal.addEventListener('click', (e) => { e.preventDefault(); closeEditModal(); });
+            const editContentTypeSelect = document.getElementById('editContentType');
+            if (editContentTypeSelect) { editContentTypeSelect.addEventListener('change', toggleEditFields); }
+
+
+            document.getElementById('editThemesContainer')?.addEventListener('change', updateEditTagsFromSelections);
+            document.getElementById('editGenresContainer')?.addEventListener('change', updateEditTagsFromSelections);
+            document.getElementById('editMoodsContainer')?.addEventListener('change', updateEditTagsFromSelections);
+            document.getElementById('editTags')?.addEventListener('input', () => { /* Allow manual input */ });
 
 
             const closeYoutubeModalButton = document.getElementById('closeYoutubeModalButton');
@@ -422,7 +427,7 @@
             if (itemData.themes && Array.isArray(itemData.themes)) allTags.push(...itemData.themes);
             if (itemData.genres && Array.isArray(itemData.genres)) allTags.push(...itemData.genres);
             if (itemData.moods && Array.isArray(itemData.moods)) allTags.push(...itemData.moods);
-            if (itemData.tags) { // Manual tags
+            if (itemData.tags) { 
                  const manualTags = itemData.tags.split(',').map(t => t.trim()).filter(t => t);
                  allTags.push(...manualTags);
             }
@@ -449,7 +454,7 @@
             actionButtonsHTML += `</div>`;
 
             const imageClass = "h-full"; 
-            const artistDisplay = itemData.aiMusicArtist || itemData.aiTool || 'N/A';
+            const artistDisplay = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; 
             let subscribeIconHTML = '';
             if (userId && !userId.startsWith('guest-') && artistDisplay !== 'N/A') {
                 const isSubscribed = userSubscribedArtists.has(artistDisplay);
@@ -500,7 +505,6 @@
             else { if(aionChartPlaceholder) { aionChartPlaceholder.classList.remove('hidden'); aionChartPlaceholder.textContent = "차트 데이터가 없습니다."; } }
         }
         
-        const uploadModal = document.getElementById('uploadModal'); 
         const editItemModal = document.getElementById('editItemModal');
         let currentEditingItemId = null;
 
@@ -522,10 +526,9 @@
                                 .map(tag => tag.trim())
                                 .filter(tag => tag && !selectedThemes.includes(tag) && !selectedGenres.includes(tag) && !selectedMoods.includes(tag));
 
-            const allTagsCombined = [...new Set([...selectedThemes, ...selectedGenres, ...selectedMoods, ...manualTags])].join(',');
-
             const isInstrumental = document.getElementById('uploadIsInstrumental').checked;
             const aiMusicArtist = document.getElementById('uploadAiMusicArtist')?.value.trim();
+            const singerName = document.getElementById('uploadSingerName')?.value.trim(); 
             const aiTool = document.getElementById('uploadAiTool')?.value.trim();
 
             if (!title || !youtubeLink || !contentType) {
@@ -536,13 +539,14 @@
 
             const newItemData = {
                 title, youtubeId, contentType, 
-                themes: selectedThemes, // Store as array
-                genres: selectedGenres, // Store as array
-                moods: selectedMoods,   // Store as array
-                tags: manualTags.join(','), // Store only manually added, distinct tags as comma-separated string
+                themes: selectedThemes, 
+                genres: selectedGenres, 
+                moods: selectedMoods,   
+                tags: manualTags.join(','), 
                 isInstrumental,
-                aiMusicArtist: contentType === 'ai-music' ? aiMusicArtist : null,
-                aiTool: contentType === 'ai-mv' ? aiTool : null,
+                aiMusicArtist: (contentType === 'ai-music' && aiMusicArtist) ? aiMusicArtist : null,
+                singerName: (contentType === 'ai-music' || contentType === 'general-music') && singerName ? singerName : null,
+                aiTool: (contentType === 'ai-mv' && aiTool) ? aiTool : null,
                 views: 0, isRecommended: false, createdAt: serverTimestamp(), uploaderId: userId
             };
 
@@ -551,7 +555,8 @@
                 showToast("콘텐츠가 성공적으로 업로드되었습니다!");
                 document.getElementById('uploadForm').reset();
                 updateThumbnailPreview('', 'thumbnailPreview'); 
-                updateUploadTagsFromSelections(); // Clear tags field
+                updateUploadTagsFromSelections(); 
+                toggleUploadFields(); // Reset field visibility
                 switchSection('home'); 
             } catch (error) {
                 console.error("Error uploading content (Admin):", error);
@@ -565,32 +570,42 @@
 
             const title = document.getElementById('editTitle').value.trim();
             const youtubeLink = document.getElementById('editYoutubeLink').value.trim();
-            // For edit, we might simplify tag editing to a single text field, or replicate the checkbox logic.
-            // For now, keeping it simple with a text field for tags.
-            const tags = document.getElementById('editTags').value.trim(); 
-            const genre = document.getElementById('editGenre').value.trim(); // This was the old field, needs update if we want multi-select edit
-            const mood = document.getElementById('editMood').value.trim();   // This was the old field, needs update
+            const contentType = document.getElementById('editContentType').value;
+
+            const selectedThemes = Array.from(document.querySelectorAll('#editThemesContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedGenres = Array.from(document.querySelectorAll('#editGenresContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedMoods = Array.from(document.querySelectorAll('#editMoodsContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            
+            const manualTags = document.getElementById('editTags').value.trim()
+                                .split(',')
+                                .map(tag => tag.trim())
+                                .filter(tag => tag && !selectedThemes.includes(tag) && !selectedGenres.includes(tag) && !selectedMoods.includes(tag));
+            
             const isInstrumental = document.getElementById('editIsInstrumental').checked;
             const aiMusicArtist = document.getElementById('editAiMusicArtist')?.value.trim();
+            const singerName = document.getElementById('editSingerName')?.value.trim(); 
             const aiTool = document.getElementById('editAiTool')?.value.trim();
             
-            if (!title || !youtubeLink) { showToast("제목과 YouTube 링크는 필수입니다.", true); return; }
+            if (!title || !youtubeLink || !contentType) { showToast("제목, YouTube 링크, 콘텐츠 유형은 필수입니다.", true); return; }
             const youtubeId = getYouTubeId(youtubeLink);
             if (!youtubeId) { showToast("유효한 YouTube 링크를 입력해주세요.", true); return; }
 
             const itemToEdit = allContentData.find(item => item.itemId === currentEditingItemId);
             if (!itemToEdit) { showToast("수정할 항목을 찾을 수 없습니다.", true); return; }
 
-            // TODO: Update edit form to handle new multi-select fields (themes, genres, moods)
-            // For now, it will save the old single genre/mood and combined tags
             const updatedItemData = {
-                title, youtubeId, tags, 
-                genre: genre, // Preserve old structure for now or update to array if edit form is changed
-                mood: mood,   // Preserve old structure for now or update to array
+                title, youtubeId, contentType,
+                themes: selectedThemes,
+                genres: selectedGenres,
+                moods: selectedMoods,
+                tags: manualTags.join(','),
                 isInstrumental,
-                aiMusicArtist: itemToEdit.contentType === 'ai-music' ? aiMusicArtist : itemToEdit.aiMusicArtist, 
-                aiTool: itemToEdit.contentType === 'ai-mv' ? aiTool : itemToEdit.aiTool, 
+                aiMusicArtist: (contentType === 'ai-music' && aiMusicArtist) ? aiMusicArtist : null,
+                singerName: (contentType === 'ai-music' || contentType === 'general-music') && singerName ? singerName : null,
+                aiTool: (contentType === 'ai-mv' && aiTool) ? aiTool : null,
+                isRecommended: itemToEdit.isRecommended || false 
             };
+
             try {
                 const itemRef = doc(db, getContentItemsCollectionPath(), currentEditingItemId);
                 await updateDoc(itemRef, updatedItemData);
@@ -663,38 +678,22 @@
             document.getElementById('editYoutubeLink').value = item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '';
             updateThumbnailPreview(item.youtubeId ? `https://www.youtube.com/watch?v=${item.youtubeId}` : '', 'editThumbnailPreview');
             
-            // Consolidate all tags (themes, genres, moods, manual tags) into the single editTags field for now
-            const allDisplayTags = [];
-            if (item.themes && Array.isArray(item.themes)) allDisplayTags.push(...item.themes);
-            if (item.genres && Array.isArray(item.genres)) allDisplayTags.push(...item.genres);
-            if (item.moods && Array.isArray(item.moods)) allDisplayTags.push(...item.moods);
-            if (item.tags) allDisplayTags.push(...item.tags.split(',').map(t=>t.trim()).filter(t=>t));
-            document.getElementById('editTags').value = [...new Set(allDisplayTags)].join(', ') || '';
+            document.getElementById('editContentType').value = item.contentType || '';
+            toggleEditFields(); 
 
-            // For simplicity, the old single genre/mood fields are populated. 
-            // A more complex edit form would be needed to manage multi-selects during edit.
-            document.getElementById('editGenre').value = Array.isArray(item.genres) ? item.genres.join(', ') : (item.genre || '');
-            document.getElementById('editMood').value = Array.isArray(item.moods) ? item.moods.join(', ') : (item.mood || '');
+            populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme', item.themes || []);
+            populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre', item.genres || []);
+            populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood', item.moods || []);
             
+            document.getElementById('editTags').value = item.tags || ''; 
+            updateEditTagsFromSelections(); 
+
             document.getElementById('editIsInstrumental').checked = item.isInstrumental || false;
             
-            const aiMusicArtistField = document.getElementById('editAiMusicArtistField');
-            const aiToolField = document.getElementById('editAiToolField');
-            const editAiMusicArtistInput = document.getElementById('editAiMusicArtist');
-            const editAiToolInput = document.getElementById('editAiTool');
-
-            if(item.contentType === 'ai-music') {
-                if(aiMusicArtistField) aiMusicArtistField.classList.remove('hidden');
-                if(aiToolField) aiToolField.classList.add('hidden');
-                if(editAiMusicArtistInput) editAiMusicArtistInput.value = item.aiMusicArtist || '';
-            } else if (item.contentType === 'ai-mv') {
-                if(aiMusicArtistField) aiMusicArtistField.classList.add('hidden');
-                if(aiToolField) aiToolField.classList.remove('hidden');
-                if(editAiToolInput) editAiToolInput.value = item.aiTool || '';
-            } else {
-                if(aiMusicArtistField) aiMusicArtistField.classList.add('hidden');
-                if(aiToolField) aiToolField.classList.add('hidden');
-            }
+            if(document.getElementById('editAiMusicArtist')) document.getElementById('editAiMusicArtist').value = item.aiMusicArtist || '';
+            if(document.getElementById('editSingerName')) document.getElementById('editSingerName').value = item.singerName || '';
+            if(document.getElementById('editAiTool')) document.getElementById('editAiTool').value = item.aiTool || '';
+            
             editItemModal.classList.remove('hidden');
         }
         function closeEditModal() { if (editItemModal) { editItemModal.classList.add('hidden'); currentEditingItemId = null; } }
@@ -729,18 +728,41 @@
 
         function toggleUploadFields() {
             const contentType = document.getElementById('uploadContentType').value;
-            const musicFields = document.getElementById('aiMusicFields');
-            const mvFields = document.getElementById('aiMvFields');
+            const aiMusicArtistContainer = document.getElementById('uploadAiMusicArtistContainer');
+            const singerNameContainer = document.getElementById('uploadSingerNameContainer');
+            const aiToolContainer = document.getElementById('uploadAiToolContainer');
+
+            if(aiMusicArtistContainer) aiMusicArtistContainer.classList.add('hidden');
+            if(singerNameContainer) singerNameContainer.classList.add('hidden');
+            if(aiToolContainer) aiToolContainer.classList.add('hidden');
 
             if (contentType === 'ai-music') {
-                if(musicFields) musicFields.classList.remove('hidden');
-                if(mvFields) mvFields.classList.add('hidden');
+                if(aiMusicArtistContainer) aiMusicArtistContainer.classList.remove('hidden');
+                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
+            } else if (contentType === 'general-music') {
+                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
             } else if (contentType === 'ai-mv') {
-                if(musicFields) musicFields.classList.add('hidden');
-                if(mvFields) mvFields.classList.remove('hidden');
-            } else { 
-                if(musicFields) musicFields.classList.add('hidden');
-                if(mvFields) mvFields.classList.add('hidden');
+                if(aiToolContainer) aiToolContainer.classList.remove('hidden');
+            }
+        }
+
+        function toggleEditFields() {
+            const contentType = document.getElementById('editContentType').value;
+            const aiMusicArtistContainer = document.getElementById('editAiMusicArtistContainer');
+            const singerNameContainer = document.getElementById('editSingerNameContainer');
+            const aiToolContainer = document.getElementById('editAiToolContainer');
+
+            if(aiMusicArtistContainer) aiMusicArtistContainer.classList.add('hidden');
+            if(singerNameContainer) singerNameContainer.classList.add('hidden');
+            if(aiToolContainer) aiToolContainer.classList.add('hidden');
+
+            if (contentType === 'ai-music') {
+                if(aiMusicArtistContainer) aiMusicArtistContainer.classList.remove('hidden');
+                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
+            } else if (contentType === 'general-music') {
+                if(singerNameContainer) singerNameContainer.classList.remove('hidden');
+            } else if (contentType === 'ai-mv') {
+                if(aiToolContainer) aiToolContainer.classList.remove('hidden');
             }
         }
         
@@ -765,7 +787,7 @@
         function closeAddToPlaylistModal() { if (addToPlaylistModal) addToPlaylistModal.classList.add('hidden'); currentItemToAddToPlaylist = null; }
         async function handleConfirmAddToPlaylist() { if (!userId || userId.startsWith('guest-') || !currentItemToAddToPlaylist) { return; } const selectedRadio = playlistSelectionContainer.querySelector('input[name="playlistSelection"]:checked'); const newPlaylistName = newPlaylistNameInAddModalInput.value.trim(); let playlistNameForToast = ""; try { if (newPlaylistName) { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: newPlaylistName, items: [currentItemToAddToPlaylist], ownerId: userId, createdAt: serverTimestamp() }); playlistNameForToast = newPlaylistName; showToast(`'${playlistNameForToast}' 플레이리스트에 곡을 추가했습니다.`); } else if (selectedRadio) { const targetPlaylistId = selectedRadio.value; const playlist = userPlaylists.find(p => p.id === targetPlaylistId); if (playlist) { playlistNameForToast = playlist.name; if (!playlist.items.includes(currentItemToAddToPlaylist)) { const playlistRef = doc(db, getUserPlaylistsCollectionPath(userId), targetPlaylistId); await updateDoc(playlistRef, { items: [...playlist.items, currentItemToAddToPlaylist] }); showToast(`'${playlistNameForToast}' 플레이리스트에 곡을 추가했습니다.`); } else { showToast('이미 해당 플레이리스트에 있는 곡입니다.'); } } else { showToast('선택한 플레이리스트를 찾을 수 없습니다.', true); return; } } else { showToast('플레이리스트를 선택하거나 새 플레이리스트 이름을 입력해주세요.', true); return; } closeAddToPlaylistModal(); } catch (error) { console.error("Error adding to playlist:", error); showToast("플레이리스트 추가 오류.", true); } }
         function renderMyPlaylists() { if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return; clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "플레이리스트를 보려면 로그인해주세요."; } return; } if (userPlaylists.length > 0) { if(myPlaylistsPlaceholder) myPlaylistsPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const card = document.createElement('div'); card.className = 'playlist-card glassmorphism cursor-pointer'; card.dataset.playlistId = pl.id; const cover = document.createElement('div'); cover.className = 'playlist-cover'; if (pl.items && pl.items.length > 0) { const firstItemId = pl.items[0]; const firstItemData = allContentData.find(item => item.itemId === firstItemId); if (firstItemData && firstItemData.youtubeId) { const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(firstItemData.youtubeId); img.alt = pl.name; img.className = 'w-full h-full object-cover rounded-md'; img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music text-3xl"></i>'; }; cover.appendChild(img); } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } const info = document.createElement('div'); info.className = 'flex-grow'; const name = document.createElement('h4'); name.className = 'font-semibold text-sm truncate'; name.textContent = pl.name; const count = document.createElement('p'); count.className = 'text-xs text-gray-400'; count.textContent = `${(pl.items || []).length}곡`; info.appendChild(name); info.appendChild(count); card.appendChild(cover); card.appendChild(info); card.addEventListener('click', () => openPlaylistDetailModal(pl.id)); myPlaylistsContainer.appendChild(card); }); } else { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "만든 플레이리스트가 없습니다."; } } }
-        function openPlaylistDetailModal(playlistId) { currentViewingPlaylistId = playlistId; const playlist = userPlaylists.find(p => p.id === playlistId); if (!playlist || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; playlistDetailNameElement.textContent = playlist.name; clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); if (playlist.items && playlist.items.length > 0) { if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); playlist.items.forEach(itemId => { const itemData = allContentData.find(item => item.itemId === itemId); if (itemData) { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionButtonsContainer = document.createElement('div'); actionButtonsContainer.className = 'flex items-center'; const removeButton = document.createElement('button'); removeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; removeButton.innerHTML = '<i class="fas fa-times"></i>'; removeButton.title = "플레이리스트에서 삭제"; removeButton.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, itemData.itemId); }); actionButtonsContainer.appendChild(removeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionButtonsContainer); playlistDetailItemsContainer.appendChild(itemDiv); } }); } else { if(playlistDetailPlaceholder) { playlistDetailPlaceholder.classList.remove('hidden'); playlistDetailPlaceholder.textContent = "이 플레이리스트에 곡이 없습니다."; } } playlistDetailModal.classList.remove('hidden'); }
+        function openPlaylistDetailModal(playlistId) { currentViewingPlaylistId = playlistId; const playlist = userPlaylists.find(p => p.id === playlistId); if (!playlist || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; playlistDetailNameElement.textContent = playlist.name; clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); if (playlist.items && playlist.items.length > 0) { if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); playlist.items.forEach(itemId => { const itemData = allContentData.find(item => item.itemId === itemId); if (itemData) { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionButtonsContainer = document.createElement('div'); actionButtonsContainer.className = 'flex items-center'; const removeButton = document.createElement('button'); removeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; removeButton.innerHTML = '<i class="fas fa-times"></i>'; removeButton.title = "플레이리스트에서 삭제"; removeButton.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, itemData.itemId); }); actionButtonsContainer.appendChild(removeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionButtonsContainer); playlistDetailItemsContainer.appendChild(itemDiv); } }); } else { if(playlistDetailPlaceholder) { playlistDetailPlaceholder.classList.remove('hidden'); playlistDetailPlaceholder.textContent = "이 플레이리스트에 곡이 없습니다."; } } playlistDetailModal.classList.remove('hidden'); }
         function closePlaylistDetailModal() { if(playlistDetailModal) playlistDetailModal.classList.add('hidden'); currentViewingPlaylistId = null; }
         async function handleDeletePlaylist() { if (!userId || userId.startsWith('guest-') || !currentViewingPlaylistId) return; const playlist = userPlaylists.find(p => p.id === currentViewingPlaylistId); if (playlist) { const confirmDelete = await showConfirmationModal(`'${playlist.name}' 플레이리스트를 정말 삭제하시겠습니까?`); if (confirmDelete) { try { const playlistRef = doc(db, getUserPlaylistsCollectionPath(userId), currentViewingPlaylistId); await deleteDoc(playlistRef); closePlaylistDetailModal(); showToast('플레이리스트가 삭제되었습니다.'); } catch (error) { console.error("Error deleting playlist:", error); showToast("플레이리스트 삭제 오류.", true); } } } else { showToast("삭제할 플레이리스트를 찾을 수 없습니다.", true); } }
         function showConfirmationModal(message) { return new Promise((resolve) => { const existingModal = document.getElementById('customConfirmModal'); if (existingModal) existingModal.remove(); const modalHtml = ` <div id="customConfirmModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100]"> <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-sm mx-4"> <p class="text-white mb-4 text-sm">${message}</p> <div class="flex justify-end space-x-3"> <button id="customConfirmCancel" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium text-white">취소</button> <button id="customConfirmOk" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium text-white">삭제</button> </div> </div> </div> `; document.body.insertAdjacentHTML('beforeend', modalHtml); const confirmModal = document.getElementById('customConfirmModal'); const okButton = document.getElementById('customConfirmOk'); const cancelButton = document.getElementById('customConfirmCancel'); const removeModal = () => { if (confirmModal) confirmModal.remove(); }; okButton.onclick = () => { removeModal(); resolve(true); }; cancelButton.onclick = () => { removeModal(); resolve(false); }; }); }
@@ -773,17 +795,17 @@
         const likedSongsContainer = document.getElementById('likedSongsContainer');
         const likedSongsPlaceholder = document.getElementById('likedSongsPlaceholder');
         async function toggleLikeItem(itemId) { if (!userId || userId.startsWith('guest-') || !itemId) return; const likeRef = doc(db, getUserLikedItemsCollectionPath(userId), itemId); try { if (userLikedItemIds.has(itemId)) { await deleteDoc(likeRef); showToast('좋아요를 취소했습니다.'); } else { await setDoc(likeRef, { likedAt: serverTimestamp(), itemId: itemId }); showToast('좋아요 표시한 곡에 추가했습니다.'); } } catch (error) { console.error("Error toggling like:", error); showToast("좋아요 처리 중 오류.", true); } }
-        function renderLikedSongs() { if (!likedSongsContainer || !likedSongsPlaceholder) return; clearContainer(likedSongsContainer, likedSongsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "좋아요 표시한 곡을 보려면 로그인해주세요."; } return; } if (userLikedItemIds.size > 0) { if(likedSongsPlaceholder) likedSongsPlaceholder.classList.add('hidden'); const likedItemsDetails = Array.from(userLikedItemIds).map(likedId => allContentData.find(item => item.itemId === likedId)).filter(itemData => itemData); likedItemsDetails.forEach(itemData => { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionWrapper = document.createElement('div'); actionWrapper.className = 'flex items-center'; const unlikeButton = document.createElement('button'); unlikeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; unlikeButton.innerHTML = '<i class="fas fa-heart-broken"></i>'; unlikeButton.title = "좋아요 취소"; unlikeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleLikeItem(itemData.itemId); }); actionWrapper.appendChild(unlikeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionWrapper); likedSongsContainer.appendChild(itemDiv); }); } else { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "아직 좋아요 표시한 곡이 없습니다."; } } }
+        function renderLikedSongs() { if (!likedSongsContainer || !likedSongsPlaceholder) return; clearContainer(likedSongsContainer, likedSongsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "좋아요 표시한 곡을 보려면 로그인해주세요."; } return; } if (userLikedItemIds.size > 0) { if(likedSongsPlaceholder) likedSongsPlaceholder.classList.add('hidden'); const likedItemsDetails = Array.from(userLikedItemIds).map(likedId => allContentData.find(item => item.itemId === likedId)).filter(itemData => itemData); likedItemsDetails.forEach(itemData => { const itemDiv = document.createElement('div'); itemDiv.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(itemData.youtubeId); img.alt = itemData.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const textInfoDiv = document.createElement('div'); textInfoDiv.className = 'flex-grow cursor-pointer'; textInfoDiv.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(itemData.youtubeId, itemData.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = itemData.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A'; textInfoDiv.appendChild(titleH5); textInfoDiv.appendChild(artistP); const actionWrapper = document.createElement('div'); actionWrapper.className = 'flex items-center'; const unlikeButton = document.createElement('button'); unlikeButton.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; unlikeButton.innerHTML = '<i class="fas fa-heart-broken"></i>'; unlikeButton.title = "좋아요 취소"; unlikeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleLikeItem(itemData.itemId); }); actionWrapper.appendChild(unlikeButton); itemDiv.appendChild(img); itemDiv.appendChild(textInfoDiv); itemDiv.appendChild(actionWrapper); likedSongsContainer.appendChild(itemDiv); }); } else { if(likedSongsPlaceholder) { likedSongsPlaceholder.classList.remove('hidden'); likedSongsPlaceholder.textContent = "아직 좋아요 표시한 곡이 없습니다."; } } }
         const subscribedArtistsContainer = document.getElementById('subscribedArtistsContainer');
         const subscribedArtistsPlaceholder = document.getElementById('subscribedArtistsPlaceholder');
         async function toggleArtistSubscription(artistName) { if (!userId || userId.startsWith('guest-') || !artistName || artistName === 'N/A') { showToast('유효한 아티스트 이름이 아니거나 로그인이 필요합니다.', true); return; } const subRef = doc(db, getUserSubscribedArtistsCollectionPath(userId), artistName); try { if (userSubscribedArtists.has(artistName)) { await deleteDoc(subRef); showToast(`${artistName} 구독을 취소했습니다.`); } else { await setDoc(subRef, { subscribedAt: serverTimestamp(), artistName: artistName }); showToast(`${artistName}을(를) 구독했습니다.`); } } catch (error) { console.error("Error toggling subscription:", error); showToast("구독 처리 중 오류.", true); } }
         function renderSubscribedArtists() { if (!subscribedArtistsContainer || !subscribedArtistsPlaceholder) return; clearContainer(subscribedArtistsContainer, subscribedArtistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "구독한 아티스트를 보려면 로그인해주세요."; } return; } if (userSubscribedArtists.size > 0) { if(subscribedArtistsPlaceholder) subscribedArtistsPlaceholder.classList.add('hidden'); userSubscribedArtists.forEach(artistName => { const div = document.createElement('div'); div.className = 'flex items-center justify-between p-2 glassmorphism rounded-md hover:bg-purple-700/20'; const nameSpan = document.createElement('span'); nameSpan.className = 'text-sm truncate'; nameSpan.textContent = artistName; const unsubscribeButton = document.createElement('button'); unsubscribeButton.className = 'text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-700/20 flex-shrink-0'; unsubscribeButton.textContent = '구독 취소'; unsubscribeButton.addEventListener('click', async (e) => { e.stopPropagation(); await toggleArtistSubscription(artistName); }); div.appendChild(nameSpan); div.appendChild(unsubscribeButton); subscribedArtistsContainer.appendChild(div); }); } else { if(subscribedArtistsPlaceholder) { subscribedArtistsPlaceholder.classList.remove('hidden'); subscribedArtistsPlaceholder.textContent = "아직 구독한 아티스트가 없습니다."; } } }
 
         // --- Helper function to populate checkbox groups ---
-        function populateCheckboxGroup(containerId, items, groupName) {
+        function populateCheckboxGroup(containerId, items, groupName, selectedItems = []) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            container.innerHTML = ''; // Clear existing options
+            container.innerHTML = ''; 
             items.forEach(item => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center space-x-2 p-2 rounded-md hover:bg-purple-700/20 cursor-pointer form-checkbox-label';
@@ -793,6 +815,9 @@
                 checkbox.name = groupName;
                 checkbox.value = item;
                 checkbox.className = 'form-checkbox text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500';
+                if (selectedItems.includes(item)) {
+                    checkbox.checked = true;
+                }
                 
                 const span = document.createElement('span');
                 span.textContent = item;
@@ -808,7 +833,13 @@
             populateCheckboxGroup('uploadThemesContainer', predefinedThemes, 'uploadTheme');
             populateCheckboxGroup('uploadGenresContainer', predefinedGenres, 'uploadGenre');
             populateCheckboxGroup('uploadMoodsContainer', predefinedMoods, 'uploadMood');
-            updateUploadTagsFromSelections(); // Initial call to set tags
+            updateUploadTagsFromSelections(); 
+        }
+         function populateEditFormOptions() {
+            populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme');
+            populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre');
+            populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood');
+            updateEditTagsFromSelections();
         }
         
         function updateUploadTagsFromSelections() {
@@ -819,17 +850,32 @@
             const uploadTagsInput = document.getElementById('uploadTags');
             if (!uploadTagsInput) return;
 
-            // Preserve manually entered tags that are not part of the selections
             const currentManualTags = uploadTagsInput.value.split(',')
                 .map(tag => tag.trim())
                 .filter(tag => tag && !themes.includes(tag) && !genres.includes(tag) && !moods.includes(tag));
 
             const allSelectedTags = [...new Set([...themes, ...genres, ...moods])];
-            
             const combinedTags = [...new Set([...allSelectedTags, ...currentManualTags])];
-
             uploadTagsInput.value = combinedTags.join(', ');
         }
+
+        function updateEditTagsFromSelections() {
+            const themes = Array.from(document.querySelectorAll('#editThemesContainer input:checked')).map(cb => cb.value);
+            const genres = Array.from(document.querySelectorAll('#editGenresContainer input:checked')).map(cb => cb.value);
+            const moods = Array.from(document.querySelectorAll('#editMoodsContainer input:checked')).map(cb => cb.value);
+            
+            const editTagsInput = document.getElementById('editTags');
+            if (!editTagsInput) return;
+
+            const currentManualTags = editTagsInput.value.split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag && !themes.includes(tag) && !genres.includes(tag) && !moods.includes(tag));
+            
+            const allSelectedTags = [...new Set([...themes, ...genres, ...moods])];
+            const combinedTags = [...new Set([...allSelectedTags, ...currentManualTags])];
+            editTagsInput.value = combinedTags.join(', ');
+        }
+
 
     </script>
 
@@ -937,7 +983,7 @@
             padding: 0.5rem; /* p-2 */
             border: 1px solid rgba(138, 43, 226, 0.3);
             border-radius: 0.375rem;
-            max-height: 200px; /* Limit height and make scrollable */
+            max-height: 150px; /* Limit height and make scrollable for edit form */
             overflow-y: auto;
         }
 
@@ -1092,13 +1138,21 @@
                             <option value="general-mv">일반 뮤직비디오</option>
                         </select>
                     </div>
-                    <div id="aiMusicFields" class="hidden space-y-4">
+                    
+                    <div id="uploadAiMusicArtistContainer" class="hidden space-y-4">
                         <div>
                             <label for="uploadAiMusicArtist" class="form-label">AI 음악 아티스트/모델</label>
                             <input type="text" id="uploadAiMusicArtist" name="uploadAiMusicArtist" class="form-input" placeholder="예: Suno AI, Udio, AIVA">
                         </div>
                     </div>
-                     <div id="aiMvFields" class="hidden space-y-4">
+                    <div id="uploadSingerNameContainer" class="hidden space-y-4">
+                        <div>
+                            <label for="uploadSingerName" class="form-label">가수 이름 (실제 가수)</label>
+                            <input type="text" id="uploadSingerName" name="uploadSingerName" class="form-input" placeholder="예: 아이유, BTS">
+                        </div>
+                    </div>
+                    
+                    <div id="uploadAiToolContainer" class="hidden space-y-4">
                         <div>
                             <label for="uploadAiTool" class="form-label">AI MV 생성 도구</label>
                             <input type="text" id="uploadAiTool" name="uploadAiTool" class="form-input" placeholder="예: Runway Gen-2, Kaiber AI">
@@ -1165,40 +1219,67 @@
     </div>
     
     <div id="editItemModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] hidden p-4">
-        <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-2xl modal-content overflow-y-auto">
+        <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-2xl modal-content overflow-y-auto scrollable-content">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-semibold">콘텐츠 수정</h3>
-                <button id="cancelEditItemButtonInModal" class="text-gray-400 hover:text-white text-2xl">×</button> </div>
+                <button id="cancelEditItemButtonInModal" class="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
             <form id="editItemForm" class="space-y-4">
-                <div>
-                    <label for="editTitle" class="form-label">제목 <span class="text-red-500">*</span></label>
-                    <input type="text" id="editTitle" name="editTitle" class="form-input" required>
-                </div>
                 <div>
                     <label for="editYoutubeLink" class="form-label">YouTube 링크 <span class="text-red-500">*</span></label>
                     <input type="url" id="editYoutubeLink" name="editYoutubeLink" class="form-input" required>
                     <img id="editThumbnailPreview" src="https://placehold.co/320x180/1A0933/4A2270?text=썸네일+미리보기" alt="Edit Thumbnail Preview" class="mt-2 rounded-lg w-full max-w-xs aspect-video object-cover">
                 </div>
-                <div id="editAiMusicArtistField" class="hidden">
-                    <label for="editAiMusicArtist" class="form-label">AI 음악 아티스트/모델</label>
-                    <input type="text" id="editAiMusicArtist" name="editAiMusicArtist" class="form-input">
+                <div>
+                    <label for="editTitle" class="form-label">제목 <span class="text-red-500">*</span></label>
+                    <input type="text" id="editTitle" name="editTitle" class="form-input" required>
                 </div>
-                <div id="editAiToolField" class="hidden">
-                    <label for="editAiTool" class="form-label">AI MV 생성 도구</label>
-                    <input type="text" id="editAiTool" name="editAiTool" class="form-input">
+                 <div>
+                    <label for="editContentType" class="form-label">콘텐츠 유형 <span class="text-red-500">*</span></label>
+                    <select id="editContentType" name="editContentType" class="form-select" required>
+                        <option value="" disabled>유형 선택...</option>
+                        <option value="ai-music">AI 생성 음악</option>
+                        <option value="ai-mv">AI 생성 뮤직비디오</option>
+                        <option value="general-music">일반 음악</option>
+                        <option value="general-mv">일반 뮤직비디오</option>
+                    </select>
                 </div>
-                <div> <label for="editTags" class="form-label">태그</label>
+
+                <div id="editAiMusicArtistContainer" class="hidden space-y-4">
+                    <div>
+                        <label for="editAiMusicArtist" class="form-label">AI 음악 아티스트/모델</label>
+                        <input type="text" id="editAiMusicArtist" name="editAiMusicArtist" class="form-input">
+                    </div>
+                </div>
+                <div id="editSingerNameContainer" class="hidden space-y-4">
+                    <div>
+                        <label for="editSingerName" class="form-label">가수 이름 (실제 가수)</label>
+                        <input type="text" id="editSingerName" name="editSingerName" class="form-input">
+                    </div>
+                </div>
+
+                <div id="editAiToolContainer" class="hidden space-y-4">
+                    <div>
+                        <label for="editAiTool" class="form-label">AI MV 생성 도구</label>
+                        <input type="text" id="editAiTool" name="editAiTool" class="form-input">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="editThemesContainer" class="form-label">주제 (다중 선택 가능)</label>
+                    <div id="editThemesContainer" class="checkbox-group-container scrollable-content"></div>
+                </div>
+                <div>
+                    <label for="editGenresContainer" class="form-label">장르 (다중 선택 가능)</label>
+                    <div id="editGenresContainer" class="checkbox-group-container scrollable-content"></div>
+                </div>
+                <div>
+                    <label for="editMoodsContainer" class="form-label">분위기 (다중 선택 가능)</label>
+                    <div id="editMoodsContainer" class="checkbox-group-container scrollable-content"></div>
+                </div>
+                <div>
+                    <label for="editTags" class="form-label">태그 (선택된 주제/장르/분위기 자동 포함, 추가 입력 가능)</label>
                     <input type="text" id="editTags" name="editTags" class="form-input">
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label for="editGenre" class="form-label">장르 (기존)</label>
-                        <input type="text" id="editGenre" name="editGenre" class="form-input" placeholder="향후 다중 선택으로 변경 예정">
-                    </div>
-                    <div>
-                        <label for="editMood" class="form-label">분위기 (기존)</label>
-                        <input type="text" id="editMood" name="editMood" class="form-input" placeholder="향후 다중 선택으로 변경 예정">
-                    </div>
                 </div>
                 <div class="flex items-center">
                     <input type="checkbox" id="editIsInstrumental" name="editIsInstrumental" class="form-checkbox">
