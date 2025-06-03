@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.youtube.com/iframe_api"></script> {/* YouTube Iframe API 로드 */}
 
     <script type="module">
         // Firebase SDK v11.6.1 (Modular)
@@ -20,6 +21,7 @@
         let userId = null;
         let isAdminMode = false; 
         let appInitialized = false;
+        let ytPlayerInstance = null; // YouTube 플레이어 인스턴스 저장 변수
 
         const ADMIN_UID = "682WUG1HLca4zsq5hmgFGcP4pAM2"; 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'aion-admin-app'; 
@@ -191,23 +193,42 @@
 
             // Upload Form Listeners
             document.getElementById('uploadForm')?.addEventListener('submit', handleUploadFormSubmit);
+            document.getElementById('uploadYoutubeLink')?.addEventListener('input', updateThumbnailPreviewFromUrlInput); 
             const uploadInputsToWatch = ['uploadYoutubeLink', 'uploadTitle', 'uploadContentType', 'uploadAiMusicArtist', 'uploadSingerName', 'uploadAiTool'];
             uploadInputsToWatch.forEach(id => document.getElementById(id)?.addEventListener('input', updateUploadTagsFromSelections));
             document.getElementById('uploadIsInstrumental')?.addEventListener('change', updateUploadTagsFromSelections);
             ['uploadThemesContainer', 'uploadGenresContainer', 'uploadMoodsContainer'].forEach(id => document.getElementById(id)?.addEventListener('change', updateUploadTagsFromSelections));
-            document.getElementById('uploadTags')?.addEventListener('input', () => updateUploadTagsFromSelections(true)); // Pass true for manual input
+            document.getElementById('uploadTags')?.addEventListener('input', () => updateUploadTagsFromSelections(true)); 
             document.getElementById('uploadContentType')?.addEventListener('change', toggleUploadFields);
-            toggleUploadFields(); // Initial call
+            toggleUploadFields(); 
+            document.getElementById('cancelUploadButton')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('uploadForm').reset();
+                updateThumbnailPreview('', 'thumbnailPreview');
+                updateUploadTagsFromSelections(); 
+                toggleUploadFields(); 
+                switchSection('home');
+            });
+
 
             // Edit Form Listeners
             document.getElementById('editItemForm')?.addEventListener('submit', handleEditFormSubmit);
+            document.getElementById('editYoutubeLink')?.addEventListener('input', updateEditThumbnailPreviewFromUrlInput); 
             const editInputsToWatch = ['editYoutubeLink', 'editTitle', 'editContentType', 'editAiMusicArtist', 'editSingerName', 'editAiTool'];
             editInputsToWatch.forEach(id => document.getElementById(id)?.addEventListener('input', updateEditTagsFromSelections));
             document.getElementById('editIsInstrumental')?.addEventListener('change', updateEditTagsFromSelections);
             ['editThemesContainer', 'editGenresContainer', 'editMoodsContainer'].forEach(id => document.getElementById(id)?.addEventListener('change', updateEditTagsFromSelections));
-            document.getElementById('editTags')?.addEventListener('input', () => updateEditTagsFromSelections(true)); // Pass true for manual input
+            document.getElementById('editTags')?.addEventListener('input', () => updateEditTagsFromSelections(true)); 
             document.getElementById('editContentType')?.addEventListener('change', toggleEditFields);
-            document.getElementById('cancelEditItemButtonInModal')?.addEventListener('click', (e) => { e.preventDefault(); closeEditModal(); });
+            
+            document.getElementById('cancelEditItemButtonInModal')?.addEventListener('click', (e) => { 
+                e.preventDefault(); 
+                closeEditModal(); 
+            });
+            const cancelEditButtonBottom = document.querySelector('#editItemForm #cancelEditItemButtonInModalClose'); 
+            if (cancelEditButtonBottom) {
+                 cancelEditButtonBottom.addEventListener('click', (e) => { e.preventDefault(); closeEditModal(); });
+            }
             
             // Other Modals and Global
             document.getElementById('closeYoutubeModalButton')?.addEventListener('click', closeYoutubeModal);
@@ -240,20 +261,22 @@
         const recommendedMusicContainer = document.getElementById('recommendedMusicContainer'), recommendedMusicPlaceholder = document.getElementById('recommendedMusicPlaceholder');
 
         function createContentItemHTML(itemData) {
-            const allDisplayTags = new Set();
-            if (itemData.title) allDisplayTags.add(itemData.title);
-            if (itemData.contentType) allDisplayTags.add(itemData.contentType);
-            if (itemData.aiMusicArtist) allDisplayTags.add(itemData.aiMusicArtist);
-            if (itemData.singerName) allDisplayTags.add(itemData.singerName);
-            if (itemData.aiTool) allDisplayTags.add(itemData.aiTool);
-            if (itemData.themes && Array.isArray(itemData.themes)) itemData.themes.forEach(t => allDisplayTags.add(t));
-            if (itemData.genres && Array.isArray(itemData.genres)) itemData.genres.forEach(g => allDisplayTags.add(g));
-            if (itemData.moods && Array.isArray(itemData.moods)) itemData.moods.forEach(m => allDisplayTags.add(m));
-            if (itemData.tags) { itemData.tags.split(',').map(t => t.trim()).filter(t => t).forEach(tag => allDisplayTags.add(tag));}
-            if (itemData.isInstrumental) allDisplayTags.add("Instrumental");
-            
-            let tagsHTML = Array.from(allDisplayTags).map(tag => `#${tag.trim()}`).join(' ');
-            if (typeof itemData.views === 'number') tagsHTML += ` <span class="text-yellow-300 ml-2"><i class="fas fa-eye text-xs"></i> ${itemData.views}</span>`;
+            let titleWithViewsHTML = `<h4 class="item-title truncate">${itemData.title || '제목 없음'}</h4>`;
+            if (typeof itemData.views === 'number') {
+                titleWithViewsHTML = `<div class="flex items-center justify-between"><h4 class="item-title truncate flex-grow">${itemData.title || '제목 없음'}</h4><span class="text-yellow-300 ml-1 text-xs whitespace-nowrap"><i class="fas fa-eye text-xs"></i> ${itemData.views}</span></div>`;
+            }
+
+            const categoryTagsArray = [];
+            if (itemData.themes && Array.isArray(itemData.themes) && itemData.themes.length > 0) {
+                itemData.themes.forEach(t => categoryTagsArray.push(`#${t.trim()}`));
+            }
+            if (itemData.genres && Array.isArray(itemData.genres) && itemData.genres.length > 0) {
+                itemData.genres.forEach(g => categoryTagsArray.push(`#${g.trim()}`));
+            }
+            if (itemData.moods && Array.isArray(itemData.moods) && itemData.moods.length > 0) {
+                itemData.moods.forEach(m => categoryTagsArray.push(`#${m.trim()}`));
+            }
+            const categoryTagsHTML = categoryTagsArray.join(' ');
 
             let actionButtonsHTML = `<div class="item-action-icon-wrapper">`;
             if (userId && !userId.startsWith('guest-')) {
@@ -267,13 +290,35 @@
                 actionButtonsHTML += `<i class="fas fa-star item-action-icon recommend-checkbox-icon ${itemData.isRecommended ? 'text-yellow-400' : 'text-gray-400'}" title="${itemData.isRecommended ? '추천 해제' : '추천 설정'}"></i>`;
             }
             actionButtonsHTML += `</div>`;
-            const artistDisplay = itemData.singerName || itemData.aiMusicArtist || itemData.aiTool || 'N/A';
-            let subscribeIconHTML = '';
-            if (userId && !userId.startsWith('guest-') && artistDisplay !== 'N/A') {
-                const isSubscribed = userSubscribedArtists.has(artistDisplay);
-                subscribeIconHTML = `<i class="${isSubscribed ? 'fas fa-heart text-red-500' : 'far fa-heart'} subscribe-artist-icon" data-artist-name="${artistDisplay}" title="${isSubscribed ? artistDisplay + ' 구독 취소' : artistDisplay + ' 구독'}"></i>`;
+            
+            let artistsHTML = '';
+            const createArtistHTML = (name, type) => {
+                if (!name || name === 'N/A') return '';
+                const isSubscribed = userSubscribedArtists.has(name);
+                const typeLabel = type === 'singer' ? '가수: ' : (type === 'ai-artist' ? 'AI 아티스트: ' : (type === 'ai-tool' ? 'AI 도구: ' : ''));
+                return `<div class="item-artist-wrapper text-gray-400 truncate">
+                            <span class="mr-1 item-title">${typeLabel}${name}</span> 
+                            ${userId && !userId.startsWith('guest-') ? 
+                                `<i class="${isSubscribed ? 'fas fa-heart text-red-500' : 'far fa-heart'} subscribe-artist-icon cursor-pointer ml-1 text-xs" data-artist-name="${name}" title="${isSubscribed ? name + ' 구독 취소' : name + ' 구독'}"></i>` 
+                                : ''}
+                        </div>`;
+            };
+
+            if (itemData.singerName && itemData.singerName !== 'N/A') {
+                artistsHTML += createArtistHTML(itemData.singerName, 'singer');
             }
-            return `${actionButtonsHTML}<div class="thumbnail-image-container mb-1"><img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image h-full" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';"></div><h4 class="item-title truncate">${itemData.title}</h4><div class="item-artist-wrapper"><p class="item-artist text-gray-400 truncate">${artistDisplay}</p>${subscribeIconHTML}</div><span class="item-tags neon-accent">${tagsHTML}</span>`;
+            if (itemData.aiMusicArtist && itemData.aiMusicArtist !== 'N/A') {
+                 artistsHTML += createArtistHTML(itemData.aiMusicArtist, 'ai-artist');
+            }
+            if (itemData.aiTool && itemData.aiTool !== 'N/A' && itemData.contentType === 'ai-mv') { 
+                 artistsHTML += createArtistHTML(itemData.aiTool, 'ai-tool');
+            }
+            
+            if (!artistsHTML) { 
+                artistsHTML = `<div class="item-artist-wrapper"><p class="item-artist text-gray-400 truncate">N/A</p></div>`;
+            }
+            
+            return `${actionButtonsHTML}<div class="thumbnail-image-container mb-1"><img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image h-full" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';"></div>${titleWithViewsHTML}${artistsHTML}<span class="item-tags neon-accent">${categoryTagsHTML}</span>`;
         }
 
         function renderContentItem(itemData, container) { 
@@ -304,20 +349,20 @@
             const singerName = document.getElementById(`${formPrefix}SingerName`)?.value.trim();
             const aiTool = document.getElementById(`${formPrefix}AiTool`)?.value.trim();
             
-            const autoGeneratedTagsSet = new Set();
-            if (title) autoGeneratedTagsSet.add(title);
-            if (contentType) autoGeneratedTagsSet.add(contentType);
-            if (document.getElementById(`${formPrefix}AiMusicArtistContainer`) && !document.getElementById(`${formPrefix}AiMusicArtistContainer`).classList.contains('hidden') && aiMusicArtist) autoGeneratedTagsSet.add(aiMusicArtist);
-            if (document.getElementById(`${formPrefix}SingerNameContainer`) && !document.getElementById(`${formPrefix}SingerNameContainer`).classList.contains('hidden') && singerName) autoGeneratedTagsSet.add(singerName);
-            if (document.getElementById(`${formPrefix}AiToolContainer`) && !document.getElementById(`${formPrefix}AiToolContainer`).classList.contains('hidden') && aiTool) autoGeneratedTagsSet.add(aiTool);
-            if (isInstrumental) autoGeneratedTagsSet.add("Instrumental");
-            themes.forEach(t => autoGeneratedTagsSet.add(t));
-            genres.forEach(g => autoGeneratedTagsSet.add(g));
-            moods.forEach(m => autoGeneratedTagsSet.add(m));
+            const autoGeneratedTags = new Set(); 
+            if (title) autoGeneratedTags.add(title);
+            if (contentType) autoGeneratedTags.add(contentType); 
+            if (document.getElementById(`${formPrefix}AiMusicArtistContainer`) && !document.getElementById(`${formPrefix}AiMusicArtistContainer`).classList.contains('hidden') && aiMusicArtist) autoGeneratedTags.add(aiMusicArtist);
+            if (document.getElementById(`${formPrefix}SingerNameContainer`) && !document.getElementById(`${formPrefix}SingerNameContainer`).classList.contains('hidden') && singerName) autoGeneratedTags.add(singerName);
+            if (document.getElementById(`${formPrefix}AiToolContainer`) && !document.getElementById(`${formPrefix}AiToolContainer`).classList.contains('hidden') && aiTool) autoGeneratedTags.add(aiTool);
+            if (isInstrumental) autoGeneratedTags.add("Instrumental");
+            themes.forEach(t => autoGeneratedTags.add(t));
+            genres.forEach(g => autoGeneratedTags.add(g));
+            moods.forEach(m => autoGeneratedTags.add(m));
 
             const allTagsFromInputString = document.getElementById(`${formPrefix}Tags`)?.value.trim() || "";
             const allTagsFromInputArray = allTagsFromInputString ? allTagsFromInputString.split(',').map(t => t.trim()).filter(t => t) : [];
-            const trulyManualTagsToSave = allTagsFromInputArray.filter(tag => !autoGeneratedTagsSet.has(tag));
+            const trulyManualTagsToSave = allTagsFromInputArray.filter(tag => !autoGeneratedTags.has(tag));
 
             return {
                 title, youtubeLink, contentType, themes, genres, moods, 
@@ -380,8 +425,7 @@
         }
 
         const youtubeModal = document.getElementById('youtubeModal');
-        const youtubePlayer = document.getElementById('youtubePlayer');
-        let currentItemToAddToPlaylist = null;
+        // const youtubePlayer = document.getElementById('youtubePlayer'); // Will be created by API
 
         async function handleContentInteraction(event) {
             if (!appInitialized) return;
@@ -389,20 +433,76 @@
             const playableItem = target.closest('.youtube-playable');
             const actionMappings = {
                 '.add-to-playlist-icon': () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } currentItemToAddToPlaylist = playableItem?.dataset.itemId; if (currentItemToAddToPlaylist) openAddToPlaylistModal(); },
-                '.subscribe-artist-icon': async () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } const artistName = target.dataset.artistName; if (artistName && artistName !== 'N/A') await toggleArtistSubscription(artistName); },
+                '.subscribe-artist-icon': async () => { 
+                    if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } 
+                    const artistName = target.dataset.artistName; 
+                    if (artistName && artistName !== 'N/A') await toggleArtistSubscription(artistName); 
+                },
                 '.like-item-button': async () => { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } const itemId = playableItem?.dataset.itemId; if(itemId) await toggleLikeItem(itemId); },
                 '.edit-item-button': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) openEditModalWithData(itemId); } },
                 '.delete-item-button': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) deleteContentItem(itemId); } },
                 '.recommend-checkbox-icon': () => { if (isAdminMode) { const itemId = playableItem?.dataset.itemId; if (itemId) toggleRecommendation(itemId); } }
             };
             for (const selector in actionMappings) {
-                if (target.closest(selector)) { event.stopPropagation(); actionMappings[selector](); return; }
+                if (target.closest(selector) || target.matches(selector)) { 
+                     event.stopPropagation(); actionMappings[selector](); return; 
+                }
             }
             if (playableItem) { const { youtubeId, itemId } = playableItem.dataset; if (youtubeId && itemId) openYoutubeModal(youtubeId, itemId); }
         }
+        
+        // *** 수정된 부분: YouTube Player API 사용 ***
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.ENDED) {
+                closeYoutubeModal();
+            }
+        }
 
-        function openYoutubeModal(youtubeId, itemId) { if (youtubePlayer && youtubeModal) { youtubePlayer.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`; youtubeModal.classList.remove('hidden'); youtubeModal.classList.add('flex'); incrementViewCount(itemId); } }
-        function closeYoutubeModal() { if (youtubePlayer && youtubeModal) { youtubePlayer.src = ''; youtubeModal.classList.add('hidden'); youtubeModal.classList.remove('flex'); } }
+        function openYoutubeModal(youtubeId, itemId) {
+            if (!youtubeModal) return;
+            if (ytPlayerInstance) {
+                ytPlayerInstance.destroy();
+                ytPlayerInstance = null;
+            }
+            // Ensure the target div for the player is empty
+            const playerDiv = document.getElementById('youtubePlayer');
+            if (playerDiv) playerDiv.innerHTML = '';
+
+
+            ytPlayerInstance = new YT.Player('youtubePlayer', {
+                height: '100%',
+                width: '100%',
+                videoId: youtubeId,
+                playerVars: {
+                    'autoplay': 1,
+                    'rel': 0, // Do not show related videos
+                    'controls': 1 // Show player controls
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            youtubeModal.classList.remove('hidden');
+            youtubeModal.classList.add('flex');
+            incrementViewCount(itemId);
+        }
+
+        function closeYoutubeModal() {
+            if (ytPlayerInstance) {
+                ytPlayerInstance.stopVideo();
+                ytPlayerInstance.destroy(); // Properly remove the player
+                ytPlayerInstance = null;
+            }
+            if (youtubeModal) {
+                youtubeModal.classList.add('hidden');
+                youtubeModal.classList.remove('flex');
+                // Clear the div in case destroy didn't fully remove the iframe or if API wasn't ready
+                const playerDiv = document.getElementById('youtubePlayer');
+                if (playerDiv) playerDiv.innerHTML = '';
+            }
+        }
+        // *** 수정된 부분 끝 ***
+
         async function incrementViewCount(itemId) { if (!itemId) return; try { await updateDoc(doc(db, getContentItemsCollectionPath(), itemId), { views: increment(1) }); } catch (e) { console.error('Err incrementing views:', e); } }
 
         function openEditModalWithData(itemId) {
@@ -478,7 +578,64 @@
         function closeAddToPlaylistModal() { if (addToPlaylistModal) addToPlaylistModal.classList.add('hidden'); currentItemToAddToPlaylist = null; }
         async function handleConfirmAddToPlaylist() { if (!userId || userId.startsWith('guest-') || !currentItemToAddToPlaylist) return; const selRadio = playlistSelectionContainer.querySelector('input:checked'); const newName = newPlaylistNameInAddModalInput.value.trim(); let nameToast = ""; try { if (newName) { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: newName, items: [currentItemToAddToPlaylist], ownerId: userId, createdAt: serverTimestamp() }); nameToast = newName; showToast(`'${nameToast}'에 추가됨.`); } else if (selRadio) { const plId = selRadio.value; const pl = userPlaylists.find(p => p.id === plId); if (pl) { nameToast = pl.name; if (!pl.items.includes(currentItemToAddToPlaylist)) { await updateDoc(doc(db, getUserPlaylistsCollectionPath(userId), plId), { items: [...pl.items, currentItemToAddToPlaylist] }); showToast(`'${nameToast}'에 추가됨.`); } else { showToast('이미 있는 곡.'); } } else { showToast('플레이리스트 없음.', true); return; } } else { showToast('선택 또는 새 이름 입력.', true); return; } closeAddToPlaylistModal(); } catch (e) { console.error("Err adding to playlist:", e); showToast("추가 오류.", true); } }
         function renderMyPlaylists() { if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return; clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "로그인 필요."; } return; } if (userPlaylists.length > 0) { if(myPlaylistsPlaceholder) myPlaylistsPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const card = document.createElement('div'); card.className = 'playlist-card glassmorphism cursor-pointer'; card.dataset.playlistId = pl.id; const cover = document.createElement('div'); cover.className = 'playlist-cover'; if (pl.items && pl.items.length > 0) { const item = allContentData.find(i => i.itemId === pl.items[0]); if (item && item.youtubeId) { const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = pl.name; img.className = 'w-full h-full object-cover rounded-md'; img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music text-3xl"></i>'; }; cover.appendChild(img); } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } const info = document.createElement('div'); info.className = 'flex-grow'; const name = document.createElement('h4'); name.className = 'font-semibold text-sm truncate'; name.textContent = pl.name; const count = document.createElement('p'); count.className = 'text-xs text-gray-400'; count.textContent = `${(pl.items || []).length}곡`; info.append(name, count); card.append(cover, info); card.addEventListener('click', () => openPlaylistDetailModal(pl.id)); myPlaylistsContainer.appendChild(card); }); } else { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "플레이리스트 없음."; } } }
-        function openPlaylistDetailModal(playlistId) { currentViewingPlaylistId = playlistId; const pl = userPlaylists.find(p => p.id === playlistId); if (!pl || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; playlistDetailNameElement.textContent = pl.name; clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); if (pl.items && pl.items.length > 0) { if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); pl.items.forEach(itemId => { const item = allContentData.find(i => i.itemId === itemId); if (item) { const div = document.createElement('div'); div.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = item.title; img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; img.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const textInfo = document.createElement('div'); textInfo.className = 'flex-grow cursor-pointer'; textInfo.addEventListener('click', (e) => { e.stopPropagation(); openYoutubeModal(item.youtubeId, item.itemId); }); const titleH5 = document.createElement('h5'); titleH5.className = 'item-title truncate'; titleH5.textContent = item.title; const artistP = document.createElement('p'); artistP.className = 'item-artist text-gray-400 truncate'; artistP.textContent = item.singerName || item.aiMusicArtist || item.aiTool || 'N/A'; textInfo.append(titleH5, artistP); const actions = document.createElement('div'); actions.className = 'flex items-center'; const removeBtn = document.createElement('button'); removeBtn.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; removeBtn.innerHTML = '<i class="fas fa-times"></i>'; removeBtn.title = "플레이리스트에서 삭제"; removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, item.itemId); }); actions.appendChild(removeBtn); div.append(img, textInfo, actions); playlistDetailItemsContainer.appendChild(div); } }); } else { if(playlistDetailPlaceholder) { playlistDetailPlaceholder.classList.remove('hidden'); playlistDetailPlaceholder.textContent = "곡 없음."; } } playlistDetailModal.classList.remove('hidden'); }
+        
+        // *** 수정된 부분: 플레이리스트 상세 모달 내 콘텐츠 클릭 시, 플레이리스트 모달 닫고 YouTube 모달 열기 ***
+        function openPlaylistDetailModal(playlistId) { 
+            currentViewingPlaylistId = playlistId; 
+            const pl = userPlaylists.find(p => p.id === playlistId); 
+            if (!pl || !playlistDetailModal || !playlistDetailNameElement || !playlistDetailItemsContainer || !playlistDetailPlaceholder) return; 
+            playlistDetailNameElement.textContent = pl.name; 
+            clearContainer(playlistDetailItemsContainer, playlistDetailPlaceholder); 
+            if (pl.items && pl.items.length > 0) { 
+                if(playlistDetailPlaceholder) playlistDetailPlaceholder.classList.add('hidden'); 
+                pl.items.forEach(itemId => { 
+                    const item = allContentData.find(i => i.itemId === itemId); 
+                    if (item) { 
+                        const div = document.createElement('div'); 
+                        div.className = 'glassmorphism p-3 rounded-lg flex items-center justify-between hover:bg-purple-700/20'; 
+                        const img = document.createElement('img'); 
+                        img.src = getYouTubeThumbnailUrl(item.youtubeId); 
+                        img.alt = item.title; 
+                        img.className = 'w-12 h-12 object-cover rounded-md mr-3 cursor-pointer'; 
+                        img.onerror = function() { this.src = thumbnailErrorPlaceholder; }; 
+                        const playAction = (e) => {
+                            e.stopPropagation(); 
+                            openYoutubeModal(item.youtubeId, item.itemId);
+                            closePlaylistDetailModal(); // YouTube 모달 열릴 때 플레이리스트 모달 닫기
+                        };
+                        img.addEventListener('click', playAction); 
+                        const textInfo = document.createElement('div'); 
+                        textInfo.className = 'flex-grow cursor-pointer'; 
+                        textInfo.addEventListener('click', playAction); 
+                        const titleH5 = document.createElement('h5'); 
+                        titleH5.className = 'item-title truncate'; 
+                        titleH5.textContent = item.title; 
+                        const artistP = document.createElement('p'); 
+                        artistP.className = 'item-artist text-gray-400 truncate'; 
+                        artistP.textContent = item.singerName || item.aiMusicArtist || item.aiTool || 'N/A'; 
+                        textInfo.append(titleH5, artistP); 
+                        const actions = document.createElement('div'); 
+                        actions.className = 'flex items-center'; 
+                        const removeBtn = document.createElement('button'); 
+                        removeBtn.className = 'p-2 text-red-400 hover:text-red-600 ml-2'; 
+                        removeBtn.innerHTML = '<i class="fas fa-times"></i>'; 
+                        removeBtn.title = "플레이리스트에서 삭제"; 
+                        removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); await removeSongFromPlaylist(playlistId, item.itemId); }); 
+                        actions.appendChild(removeBtn); 
+                        div.append(img, textInfo, actions); 
+                        playlistDetailItemsContainer.appendChild(div); 
+                    } 
+                }); 
+            } else { 
+                if(playlistDetailPlaceholder) { 
+                    playlistDetailPlaceholder.classList.remove('hidden'); 
+                    playlistDetailPlaceholder.textContent = "곡 없음."; 
+                } 
+            } 
+            playlistDetailModal.classList.remove('hidden'); 
+        }
+        // *** 수정된 부분 끝 ***
+
         function closePlaylistDetailModal() { if(playlistDetailModal) playlistDetailModal.classList.add('hidden'); currentViewingPlaylistId = null; }
         async function handleDeletePlaylist() { if (!userId || userId.startsWith('guest-') || !currentViewingPlaylistId) return; const pl = userPlaylists.find(p => p.id === currentViewingPlaylistId); if (pl) { if (await showConfirmationModal(`'${pl.name}' 삭제?`)) { try { await deleteDoc(doc(db, getUserPlaylistsCollectionPath(userId), currentViewingPlaylistId)); closePlaylistDetailModal(); showToast('플레이리스트 삭제됨.'); } catch (e) { console.error("Err deleting playlist:", e); showToast("삭제 오류.", true); } } } else { showToast("플레이리스트 없음.", true); } }
         function showConfirmationModal(message) { return new Promise((resolve) => { const m = document.getElementById('customConfirmModal'); if (m) m.remove(); const html = ` <div id="customConfirmModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100]"> <div class="glassmorphism p-6 rounded-lg shadow-xl w-full max-w-sm mx-4"> <p class="text-white mb-4 text-sm">${message}</p> <div class="flex justify-end space-x-3"> <button id="customConfirmCancel" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium text-white">취소</button> <button id="customConfirmOk" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium text-white">삭제</button> </div> </div> </div> `; document.body.insertAdjacentHTML('beforeend', html); const cM = document.getElementById('customConfirmModal'), okB = document.getElementById('customConfirmOk'), canB = document.getElementById('customConfirmCancel'); const rM = () => { if (cM) cM.remove(); }; okB.onclick = () => { rM(); resolve(true); }; canB.onclick = () => { rM(); resolve(false); }; }); }
@@ -505,11 +662,11 @@
         function populateEditFormOptions() { populateCheckboxGroup('editThemesContainer', predefinedThemes, 'editTheme'); populateCheckboxGroup('editGenresContainer', predefinedGenres, 'editGenre'); populateCheckboxGroup('editMoodsContainer', predefinedMoods, 'editMood'); updateEditTagsFromSelections(); }
         
         function updateCombinedTags(formPrefix, isManualTagInput = false) {
-            const autoGeneratedTags = new Set();
+            const autoGeneratedTags = new Set(); 
             const getEl = (id) => document.getElementById(`${formPrefix}${id}`);
             
             const title = getEl('Title')?.value.trim(); if (title) autoGeneratedTags.add(title);
-            const contentType = getEl('ContentType')?.value; if (contentType) autoGeneratedTags.add(contentType);
+            const contentType = getEl('ContentType')?.value; if (contentType) autoGeneratedTags.add(contentType); 
             
             const aiArtistEl = getEl('AiMusicArtist'); const aiArtistContainer = getEl('AiMusicArtistContainer');
             if (aiArtistEl && aiArtistContainer && !aiArtistContainer.classList.contains('hidden')) { const val = aiArtistEl.value.trim(); if (val) autoGeneratedTags.add(val); }
@@ -530,20 +687,19 @@
             let trulyManualTags = [];
             if (tagsInput) {
                 const currentTagsInInput = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
-                if (isManualTagInput) { // If user is typing in tags field, all existing are considered "manual" for now
+                if (isManualTagInput) { 
                     trulyManualTags = currentTagsInInput;
-                } else { // Otherwise, filter out what's already auto-generated
+                } else { 
                     trulyManualTags = currentTagsInInput.filter(tag => !autoGeneratedTags.has(tag));
                 }
             }
             
             const finalDisplayTags = [...new Set([...Array.from(autoGeneratedTags), ...trulyManualTags])];
             if (tagsInput) {
-                // Preserve cursor position if it's a manual input focus
                 const currentCursorPos = tagsInput.selectionStart;
                 const oldValue = tagsInput.value;
                 tagsInput.value = finalDisplayTags.join(', ');
-                if (isManualTagInput && document.activeElement === tagsInput && oldValue.length === tagsInput.value.length) { // Avoid jump if length changed drastically
+                if (isManualTagInput && document.activeElement === tagsInput && oldValue.length === tagsInput.value.length) { 
                      tagsInput.setSelectionRange(currentCursorPos, currentCursorPos);
                 }
             }
@@ -588,6 +744,7 @@
         .item-title { font-size: 0.75rem; font-weight: 500; line-height: 1.2; margin-bottom: 0.125rem; } 
         .item-artist, .item-tags { font-size: 0.65rem; line-height: 1.2; } 
         .item-tags { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: calc(0.65rem * 1.2 * 2);  }
+        .item-artist-wrapper { display: flex; align-items: center; margin-bottom: 0.1rem; }
 
 
         @media (min-width: 640px) { 
@@ -601,7 +758,6 @@
         @media (min-width: 768px) { 
             .youtube-playable { padding-top: 0; } 
         }
-        .item-artist-wrapper { display: flex; align-items: center; margin-bottom: 0.25rem;}
         .playlist-card { display: flex; align-items: center; padding: 0.75rem; border-radius: 0.5rem; transition: background-color 0.2s; }
         .playlist-card:hover { background-color: rgba(138, 43, 226, 0.2); }
         .playlist-cover { width: 4rem; height: 4rem; border-radius: 0.375rem; object-fit: cover; margin-right: 0.75rem; background-color: rgba(138, 43, 226, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -861,7 +1017,10 @@
                         <input type="checkbox" id="uploadIsInstrumental" name="uploadIsInstrumental" class="form-checkbox">
                         <label for="uploadIsInstrumental" class="text-sm ml-2">Instrumental (연주곡)</label>
                     </div>
-                    <button type="submit" class="w-full neon-accent-bg text-white font-semibold py-3 rounded-lg hover:bg-purple-700 transition-colors">업로드</button>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="w-1/2 neon-accent-bg text-white font-semibold py-3 rounded-lg hover:bg-purple-700 transition-colors">업로드</button>
+                        <button type="button" id="cancelUploadButton" class="w-1/2 bg-gray-600 text-white font-semibold py-3 rounded-lg hover:bg-gray-700 transition-colors">취소</button>
+                    </div>
                 </form>
             </section>
 
@@ -885,10 +1044,11 @@
         </div>
     </main>
 
-    <div id="youtubeModal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+    <div id="youtubeModal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[70] hidden">
         <div class="glassmorphism p-1 md:p-2 rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 relative">
             <button id="closeYoutubeModalButton" class="absolute -top-3 -right-3 md:top-2 md:right-2 text-white bg-purple-600 hover:bg-purple-800 rounded-full w-8 h-8 flex items-center justify-center text-xl z-10"> × </button>
-            <div class="aspect-video"> <iframe id="youtubePlayer" width="100%" height="100%" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            <div class="aspect-video">
+                <div id="youtubePlayer"></div> {/* iframe 대신 API가 플레이어를 삽입할 div */}
             </div>
         </div>
     </div>
@@ -912,7 +1072,7 @@
                  <div>
                     <label for="editContentType" class="form-label">콘텐츠 유형 <span class="text-red-500">*</span></label>
                     <select id="editContentType" name="editContentType" class="form-select" required>
-                        <option value="" disabled>유형 선택...</option>
+                        <option value="" disabled selected>유형 선택...</option>
                         <option value="ai-music">AI 생성 음악</option>
                         <option value="ai-mv">AI 생성 뮤직비디오</option>
                         <option value="general-music">일반 음악</option>
@@ -961,7 +1121,7 @@
                     <label for="editIsInstrumental" class="text-sm ml-2">Instrumental (연주곡)</label>
                 </div>
                 <div class="flex justify-end space-x-3 pt-4">
-                    <button type="button" id="cancelEditItemButtonInModal" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button> 
+                    <button type="button" id="cancelEditItemButtonInModalClose" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium">취소</button> 
                     <button type="submit" class="px-4 py-2 neon-accent-bg hover:bg-purple-700 rounded-lg text-sm font-medium">저장</button>
                 </div>
             </form>
