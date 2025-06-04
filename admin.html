@@ -125,6 +125,7 @@
         function loadAllDataAndRender() {
             if (!userId) { /* Clear data and UI */ return; }
             if (unsubscribeContentItems) unsubscribeContentItems(); 
+            // Data is fetched newest first
             unsubscribeContentItems = onSnapshot(query(collection(db, getContentItemsCollectionPath()), orderBy('createdAt', 'desc')), (snap) => {
                 allContentData = snap.docs.map(d => ({ ...d.data(), itemId: d.id })); renderPageContent();
             }, (err) => { console.error("Error content (Admin):", err); showToast('콘텐츠 로딩 실패', true); });
@@ -321,16 +322,40 @@
             return `${actionButtonsHTML}<div class="thumbnail-image-container mb-1"><img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image h-full" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';"></div>${titleWithViewsHTML}${artistsHTML}<span class="item-tags neon-accent">${categoryTagsHTML}</span>`;
         }
 
+        // *** MODIFIED FUNCTION ***
+        // This function creates a DOM element for a content item and appends it to the given container.
+        // The order of items in `allContentData` (newest first) will be preserved visually.
         function renderContentItem(itemData, container) { 
-            if (!container) return; const newItemDiv = document.createElement('div');
+            if (!container) return; 
+            const newItemDiv = document.createElement('div');
             newItemDiv.className = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer flex flex-col'; 
-            newItemDiv.dataset.youtubeId = itemData.youtubeId; newItemDiv.dataset.itemId = itemData.itemId;
+            newItemDiv.dataset.youtubeId = itemData.youtubeId; 
+            newItemDiv.dataset.itemId = itemData.itemId;
             newItemDiv.innerHTML = createContentItemHTML(itemData);
-            if (container === newUploadsContainer) container.insertBefore(newItemDiv, container.firstChild); else container.appendChild(newItemDiv);
+            container.appendChild(newItemDiv); // Always append. This ensures newest items (first in allContentData) appear first.
         }
+        // *** END OF MODIFIED FUNCTION ***
+
         function clearContainer(container, placeholder) { if (!container) return; Array.from(container.children).filter(c => c !== placeholder).forEach(c => container.removeChild(c)); }
         function renderPageContent() { renderNewUploadsSection(); renderAionChart(); renderRecommendedMusicSection(); }
-        function renderNewUploadsSection() { if (!newUploadsContainer) return; clearContainer(newUploadsContainer, newUploadsPlaceholder); if (allContentData.length > 0) { if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); } else { if(newUploadsPlaceholder) { newUploadsPlaceholder.classList.remove('hidden'); newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; } } }
+        
+        // This function renders the "New AI Music & MV" section.
+        // It iterates `allContentData` (which is newest to oldest) and calls `renderContentItem`.
+        // With the modified `renderContentItem`, items will be appended, resulting in newest items appearing first.
+        function renderNewUploadsSection() { 
+            if (!newUploadsContainer) return; 
+            clearContainer(newUploadsContainer, newUploadsPlaceholder); 
+            if (allContentData.length > 0) { 
+                if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); 
+                allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); 
+            } else { 
+                if(newUploadsPlaceholder) { 
+                    newUploadsPlaceholder.classList.remove('hidden'); 
+                    newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; 
+                } 
+            } 
+        }
+
         function renderRecommendedMusicSection() { if (!recommendedMusicContainer) return; clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder); const items = allContentData.filter(item => item.isRecommended); if (items.length > 0) { if(recommendedMusicPlaceholder) recommendedMusicPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, recommendedMusicContainer)); } else { if(recommendedMusicPlaceholder) { recommendedMusicPlaceholder.classList.remove('hidden'); recommendedMusicPlaceholder.textContent = "추천 음악이 없습니다."; } } }
         function renderAionChart() { if (!aionChartContainer) return; clearContainer(aionChartContainer, aionChartPlaceholder); const items = [...allContentData].filter(i => (i.views || 0) > 0).sort((a,b) => (b.views||0) - (a.views||0)).slice(0,10); if (items.length > 0) { if(aionChartPlaceholder) aionChartPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, aionChartContainer)); } else { if(aionChartPlaceholder) { aionChartPlaceholder.classList.remove('hidden'); aionChartPlaceholder.textContent = "차트 데이터가 없습니다."; } } }
         
@@ -425,7 +450,6 @@
         }
 
         const youtubeModal = document.getElementById('youtubeModal');
-        // const youtubePlayer = document.getElementById('youtubePlayer'); // Will be created by API
 
         async function handleContentInteraction(event) {
             if (!appInitialized) return;
@@ -451,7 +475,6 @@
             if (playableItem) { const { youtubeId, itemId } = playableItem.dataset; if (youtubeId && itemId) openYoutubeModal(youtubeId, itemId); }
         }
         
-        // *** 수정된 부분: YouTube Player API 사용 ***
         function onPlayerStateChange(event) {
             if (event.data == YT.PlayerState.ENDED) {
                 closeYoutubeModal();
@@ -464,7 +487,6 @@
                 ytPlayerInstance.destroy();
                 ytPlayerInstance = null;
             }
-            // Ensure the target div for the player is empty
             const playerDiv = document.getElementById('youtubePlayer');
             if (playerDiv) playerDiv.innerHTML = '';
 
@@ -475,8 +497,8 @@
                 videoId: youtubeId,
                 playerVars: {
                     'autoplay': 1,
-                    'rel': 0, // Do not show related videos
-                    'controls': 1 // Show player controls
+                    'rel': 0, 
+                    'controls': 1 
                 },
                 events: {
                     'onStateChange': onPlayerStateChange
@@ -490,18 +512,16 @@
         function closeYoutubeModal() {
             if (ytPlayerInstance) {
                 ytPlayerInstance.stopVideo();
-                ytPlayerInstance.destroy(); // Properly remove the player
+                ytPlayerInstance.destroy(); 
                 ytPlayerInstance = null;
             }
             if (youtubeModal) {
                 youtubeModal.classList.add('hidden');
                 youtubeModal.classList.remove('flex');
-                // Clear the div in case destroy didn't fully remove the iframe or if API wasn't ready
                 const playerDiv = document.getElementById('youtubePlayer');
                 if (playerDiv) playerDiv.innerHTML = '';
             }
         }
-        // *** 수정된 부분 끝 ***
 
         async function incrementViewCount(itemId) { if (!itemId) return; try { await updateDoc(doc(db, getContentItemsCollectionPath(), itemId), { views: increment(1) }); } catch (e) { console.error('Err incrementing views:', e); } }
 
@@ -570,6 +590,7 @@
         const playlistDetailModal = document.getElementById('playlistDetailModal'), playlistDetailNameElement = document.getElementById('playlistDetailName');
         const playlistDetailItemsContainer = document.getElementById('playlistDetailItemsContainer'), playlistDetailPlaceholder = document.getElementById('playlistDetailPlaceholder');
         let currentViewingPlaylistId = null;
+        let currentItemToAddToPlaylist = null; // Added to store item ID for playlist addition
 
         function openCreatePlaylistModal() { if (!userId || userId.startsWith('guest-')) { showToast("로그인 필요", true); return; } if (createPlaylistModal) createPlaylistModal.classList.remove('hidden'); if (newPlaylistNameInput) newPlaylistNameInput.value = ''; }
         function closeCreatePlaylistModal() { if (createPlaylistModal) createPlaylistModal.classList.add('hidden'); }
@@ -579,7 +600,6 @@
         async function handleConfirmAddToPlaylist() { if (!userId || userId.startsWith('guest-') || !currentItemToAddToPlaylist) return; const selRadio = playlistSelectionContainer.querySelector('input:checked'); const newName = newPlaylistNameInAddModalInput.value.trim(); let nameToast = ""; try { if (newName) { await addDoc(collection(db, getUserPlaylistsCollectionPath(userId)), { name: newName, items: [currentItemToAddToPlaylist], ownerId: userId, createdAt: serverTimestamp() }); nameToast = newName; showToast(`'${nameToast}'에 추가됨.`); } else if (selRadio) { const plId = selRadio.value; const pl = userPlaylists.find(p => p.id === plId); if (pl) { nameToast = pl.name; if (!pl.items.includes(currentItemToAddToPlaylist)) { await updateDoc(doc(db, getUserPlaylistsCollectionPath(userId), plId), { items: [...pl.items, currentItemToAddToPlaylist] }); showToast(`'${nameToast}'에 추가됨.`); } else { showToast('이미 있는 곡.'); } } else { showToast('플레이리스트 없음.', true); return; } } else { showToast('선택 또는 새 이름 입력.', true); return; } closeAddToPlaylistModal(); } catch (e) { console.error("Err adding to playlist:", e); showToast("추가 오류.", true); } }
         function renderMyPlaylists() { if (!myPlaylistsContainer || !myPlaylistsPlaceholder) return; clearContainer(myPlaylistsContainer, myPlaylistsPlaceholder); if (!userId || userId.startsWith('guest-')) { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "로그인 필요."; } return; } if (userPlaylists.length > 0) { if(myPlaylistsPlaceholder) myPlaylistsPlaceholder.classList.add('hidden'); userPlaylists.forEach(pl => { const card = document.createElement('div'); card.className = 'playlist-card glassmorphism cursor-pointer'; card.dataset.playlistId = pl.id; const cover = document.createElement('div'); cover.className = 'playlist-cover'; if (pl.items && pl.items.length > 0) { const item = allContentData.find(i => i.itemId === pl.items[0]); if (item && item.youtubeId) { const img = document.createElement('img'); img.src = getYouTubeThumbnailUrl(item.youtubeId); img.alt = pl.name; img.className = 'w-full h-full object-cover rounded-md'; img.onerror = function() { this.parentElement.innerHTML = '<i class="fas fa-music text-3xl"></i>'; }; cover.appendChild(img); } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } } else { cover.innerHTML = '<i class="fas fa-music text-3xl"></i>'; } const info = document.createElement('div'); info.className = 'flex-grow'; const name = document.createElement('h4'); name.className = 'font-semibold text-sm truncate'; name.textContent = pl.name; const count = document.createElement('p'); count.className = 'text-xs text-gray-400'; count.textContent = `${(pl.items || []).length}곡`; info.append(name, count); card.append(cover, info); card.addEventListener('click', () => openPlaylistDetailModal(pl.id)); myPlaylistsContainer.appendChild(card); }); } else { if(myPlaylistsPlaceholder) { myPlaylistsPlaceholder.classList.remove('hidden'); myPlaylistsPlaceholder.textContent = "플레이리스트 없음."; } } }
         
-        // *** 수정된 부분: 플레이리스트 상세 모달 내 콘텐츠 클릭 시, 플레이리스트 모달 닫고 YouTube 모달 열기 ***
         function openPlaylistDetailModal(playlistId) { 
             currentViewingPlaylistId = playlistId; 
             const pl = userPlaylists.find(p => p.id === playlistId); 
@@ -601,7 +621,7 @@
                         const playAction = (e) => {
                             e.stopPropagation(); 
                             openYoutubeModal(item.youtubeId, item.itemId);
-                            closePlaylistDetailModal(); // YouTube 모달 열릴 때 플레이리스트 모달 닫기
+                            closePlaylistDetailModal(); 
                         };
                         img.addEventListener('click', playAction); 
                         const textInfo = document.createElement('div'); 
@@ -634,7 +654,6 @@
             } 
             playlistDetailModal.classList.remove('hidden'); 
         }
-        // *** 수정된 부분 끝 ***
 
         function closePlaylistDetailModal() { if(playlistDetailModal) playlistDetailModal.classList.add('hidden'); currentViewingPlaylistId = null; }
         async function handleDeletePlaylist() { if (!userId || userId.startsWith('guest-') || !currentViewingPlaylistId) return; const pl = userPlaylists.find(p => p.id === currentViewingPlaylistId); if (pl) { if (await showConfirmationModal(`'${pl.name}' 삭제?`)) { try { await deleteDoc(doc(db, getUserPlaylistsCollectionPath(userId), currentViewingPlaylistId)); closePlaylistDetailModal(); showToast('플레이리스트 삭제됨.'); } catch (e) { console.error("Err deleting playlist:", e); showToast("삭제 오류.", true); } } } else { showToast("플레이리스트 없음.", true); } }
@@ -817,7 +836,6 @@
             max-height: 150px; /* Limit height and make scrollable for edit form */
             overflow-y: auto;
         }
-
 
     </style>
 </head>

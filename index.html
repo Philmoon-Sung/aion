@@ -338,16 +338,40 @@
             return `${actionButtonsHTML}<div class="thumbnail-image-container mb-1"><img src="${getYouTubeThumbnailUrl(itemData.youtubeId)}" alt="${itemData.title}" class="thumbnail-image h-full" onerror="this.onerror=null;this.src='${thumbnailErrorPlaceholder}';"></div>${titleWithViewsHTML}${artistsHTML}<span class="item-tags neon-accent">${categoryTagsHTML}</span>`;
         }
 
+        // *** MODIFIED FUNCTION ***
+        // This function creates a DOM element for a content item and appends it to the given container.
+        // The order of items in `allContentData` (newest first) will be preserved visually.
         function renderContentItem(itemData, container) { 
-            if (!container) return; const newItemDiv = document.createElement('div');
+            if (!container) return; 
+            const newItemDiv = document.createElement('div');
             newItemDiv.className = 'youtube-playable glassmorphism p-2 sm:p-3 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-shadow cursor-pointer flex flex-col'; 
-            newItemDiv.dataset.youtubeId = itemData.youtubeId; newItemDiv.dataset.itemId = itemData.itemId;
+            newItemDiv.dataset.youtubeId = itemData.youtubeId; 
+            newItemDiv.dataset.itemId = itemData.itemId;
             newItemDiv.innerHTML = createContentItemHTML(itemData);
-            if (container === newUploadsContainer) container.insertBefore(newItemDiv, container.firstChild); else container.appendChild(newItemDiv);
+            // Always append. This ensures newest items (first in allContentData array) appear first when displayed.
+            container.appendChild(newItemDiv); 
         }
+        // *** END OF MODIFIED FUNCTION ***
+
         function clearContainer(container, placeholder) { if (!container) return; Array.from(container.children).filter(c => c !== placeholder).forEach(c => container.removeChild(c)); }
         function renderPageContent() { renderNewUploadsSection(); renderAionChart(); renderRecommendedMusicSection(); }
-        function renderNewUploadsSection() { if (!newUploadsContainer) return; clearContainer(newUploadsContainer, newUploadsPlaceholder); if (allContentData.length > 0) { if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); } else { if(newUploadsPlaceholder) { newUploadsPlaceholder.classList.remove('hidden'); newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; } } }
+        
+        // This function renders the "New AI Music & MV" section.
+        // It iterates `allContentData` (which is newest to oldest) and calls `renderContentItem`.
+        // With the modified `renderContentItem`, items will be appended, resulting in newest items appearing first.
+        function renderNewUploadsSection() { 
+            if (!newUploadsContainer) return; 
+            clearContainer(newUploadsContainer, newUploadsPlaceholder); 
+            if (allContentData.length > 0) { 
+                if(newUploadsPlaceholder) newUploadsPlaceholder.classList.add('hidden'); 
+                allContentData.forEach(item => renderContentItem(item, newUploadsContainer)); 
+            } else { 
+                if(newUploadsPlaceholder) { 
+                    newUploadsPlaceholder.classList.remove('hidden'); 
+                    newUploadsPlaceholder.textContent = "업로드된 콘텐츠가 없습니다."; 
+                } 
+            } 
+        }
         function renderRecommendedMusicSection() { if (!recommendedMusicContainer) return; clearContainer(recommendedMusicContainer, recommendedMusicPlaceholder); const items = allContentData.filter(item => item.isRecommended); if (items.length > 0) { if(recommendedMusicPlaceholder) recommendedMusicPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, recommendedMusicContainer)); } else { if(recommendedMusicPlaceholder) { recommendedMusicPlaceholder.classList.remove('hidden'); recommendedMusicPlaceholder.textContent = "추천 음악이 없습니다."; } } }
         function renderAionChart() { if (!aionChartContainer) return; clearContainer(aionChartContainer, aionChartPlaceholder); const items = [...allContentData].filter(i => (i.views || 0) > 0).sort((a,b) => (b.views||0) - (a.views||0)).slice(0,10); if (items.length > 0) { if(aionChartPlaceholder) aionChartPlaceholder.classList.add('hidden'); items.forEach(item => renderContentItem(item, aionChartContainer)); } else { if(aionChartPlaceholder) { aionChartPlaceholder.classList.remove('hidden'); aionChartPlaceholder.textContent = "차트 데이터가 없습니다."; } } }
         
